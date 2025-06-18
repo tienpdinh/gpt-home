@@ -40,15 +40,6 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-go-${{ matrix.go-version }}-
 
-    - name: Debug directory structure
-      run: |
-        pwd
-        ls -la
-        echo "pkg directory:"
-        ls -la pkg/ || echo "pkg directory not found"
-        echo "pkg/models directory:"
-        ls -la pkg/models/ || echo "pkg/models directory not found"
-
     - name: Setup Go module
       run: |
         go mod tidy
