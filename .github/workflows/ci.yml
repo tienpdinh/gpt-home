@@ -40,29 +40,11 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-go-${{ matrix.go-version }}-
 
-    - name: Initialize module workspace
+    - name: Setup Go module
       run: |
-        export GOPROXY=direct
-        export GOSUMDB=off
-        go env -w GOPROXY=direct
-        go env -w GOSUMDB=off
+        go mod tidy
         go mod download
-
-    - name: Verify dependencies
-      run: go mod verify
-
-    - name: Debug module status
-      run: |
-        pwd
-        ls -la
-        echo "Go module path:"
-        go env GOMOD
-        echo "Module name from go.mod:"
-        head -1 go.mod
-        echo "Testing package resolution:"
-        go list -m github.com/tienpdinh/gpt-home || echo "Module not found"
-        echo "Available packages:"
-        go list ./... || echo "Package listing failed"
+        go mod verify
 
     - name: Run go vet
       run: go vet ./...
@@ -108,12 +90,9 @@ jobs:
       with:
         go-version: 1.21.x
 
-    - name: Download dependencies
+    - name: Setup Go module
       run: |
-        export GOPROXY=direct
-        export GOSUMDB=off
-        go env -w GOPROXY=direct
-        go env -w GOSUMDB=off
+        go mod tidy
         go mod download
 
     - name: Run golangci-lint
@@ -168,12 +147,9 @@ jobs:
       with:
         go-version: 1.21.x
 
-    - name: Download dependencies
+    - name: Setup Go module
       run: |
-        export GOPROXY=direct
-        export GOSUMDB=off
-        go env -w GOPROXY=direct
-        go env -w GOSUMDB=off
+        go mod tidy
         go mod download
 
     - name: Install and run Gosec Security Scanner
