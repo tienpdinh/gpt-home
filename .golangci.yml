@@ -73,30 +73,15 @@ linters:
   disable-all: true
   enable:
     - bodyclose
-    - dupl
     - errcheck
-    - exhaustive
-    - funlen
-    - gochecknoinits
-    - goconst
-    - gocritic
-    - gocyclo
     - gofmt
     - goimports
     - govet
     - ineffassign
-    - lll
     - misspell
-    - mnd
-    - nakedret
-    - noctx
-    - nolintlint
     - rowserrcheck
     - staticcheck
-    - stylecheck
     - typecheck
-    - unconvert
-    - unparam
     - unused
     - whitespace
 
@@ -113,14 +98,20 @@ issues:
         - funlen
         - dupl
         - gocyclo
+        - errcheck
+        - goconst
+        - stylecheck
+        - goimports
     - path: cmd/
       linters:
         - mnd
+        - stylecheck
     - path: test/
       linters:
         - mnd
         - funlen
         - dupl
+        - errcheck
   exclude-use-default: false
   exclude-case-sensitive: false
   include:

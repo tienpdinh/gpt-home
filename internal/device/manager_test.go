@@ -197,28 +197,28 @@ func TestFindDevicesByName(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		name         string
-		searchName   string
+		name             string
+		searchName       string
 		expectedMinCount int
 	}{
 		{
-			name:         "find light devices",
-			searchName:   "light",
+			name:             "find light devices",
+			searchName:       "light",
 			expectedMinCount: 2, // living room and bedroom lights
 		},
 		{
-			name:         "find living room",
-			searchName:   "living room",
+			name:             "find living room",
+			searchName:       "living room",
 			expectedMinCount: 1,
 		},
 		{
-			name:         "case insensitive search",
-			searchName:   "BEDROOM",
+			name:             "case insensitive search",
+			searchName:       "BEDROOM",
 			expectedMinCount: 1,
 		},
 		{
-			name:         "no matches",
-			searchName:   "nonexistent",
+			name:             "no matches",
+			searchName:       "nonexistent",
 			expectedMinCount: 0,
 		},
 	}
@@ -240,28 +240,28 @@ func TestFindDevicesByType(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		name         string
-		deviceType   models.DeviceType
+		name             string
+		deviceType       models.DeviceType
 		expectedMinCount int
 	}{
 		{
-			name:         "find lights",
-			deviceType:   models.DeviceTypeLight,
+			name:             "find lights",
+			deviceType:       models.DeviceTypeLight,
 			expectedMinCount: 2,
 		},
 		{
-			name:         "find switches",
-			deviceType:   models.DeviceTypeSwitch,
+			name:             "find switches",
+			deviceType:       models.DeviceTypeSwitch,
 			expectedMinCount: 1,
 		},
 		{
-			name:         "find climate devices",
-			deviceType:   models.DeviceTypeClimate,
+			name:             "find climate devices",
+			deviceType:       models.DeviceTypeClimate,
 			expectedMinCount: 1,
 		},
 		{
-			name:         "find sensors",
-			deviceType:   models.DeviceTypeSensor,
+			name:             "find sensors",
+			deviceType:       models.DeviceTypeSensor,
 			expectedMinCount: 1,
 		},
 	}
@@ -270,7 +270,7 @@ func TestFindDevicesByType(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devices := manager.FindDevicesByType(tt.deviceType)
 			assert.GreaterOrEqual(t, len(devices), tt.expectedMinCount)
-			
+
 			// Verify all returned devices are of the correct type
 			for _, device := range devices {
 				assert.Equal(t, tt.deviceType, device.Type)
@@ -296,87 +296,87 @@ func TestMapActionToService(t *testing.T) {
 	manager := NewManager(mockClient)
 
 	tests := []struct {
-		name           string
-		device         *models.Device
-		action         models.DeviceAction
-		expectedDomain string
+		name            string
+		device          *models.Device
+		action          models.DeviceAction
+		expectedDomain  string
 		expectedService string
-		expectedData   map[string]interface{}
+		expectedData    map[string]interface{}
 	}{
 		{
-			name: "light turn on",
-			device: &models.Device{Type: models.DeviceTypeLight},
-			action: models.DeviceAction{Action: "turn_on"},
-			expectedDomain: "light",
+			name:            "light turn on",
+			device:          &models.Device{Type: models.DeviceTypeLight},
+			action:          models.DeviceAction{Action: "turn_on"},
+			expectedDomain:  "light",
 			expectedService: "turn_on",
-			expectedData: map[string]interface{}{},
+			expectedData:    map[string]interface{}{},
 		},
 		{
-			name: "light set brightness",
+			name:   "light set brightness",
 			device: &models.Device{Type: models.DeviceTypeLight},
 			action: models.DeviceAction{
-				Action: "set_brightness",
+				Action:     "set_brightness",
 				Parameters: map[string]any{"brightness": 255},
 			},
-			expectedDomain: "light",
+			expectedDomain:  "light",
 			expectedService: "turn_on",
-			expectedData: map[string]interface{}{"brightness": 255},
+			expectedData:    map[string]interface{}{"brightness": 255},
 		},
 		{
-			name: "switch toggle",
-			device: &models.Device{Type: models.DeviceTypeSwitch},
-			action: models.DeviceAction{Action: "toggle"},
-			expectedDomain: "switch",
+			name:            "switch toggle",
+			device:          &models.Device{Type: models.DeviceTypeSwitch},
+			action:          models.DeviceAction{Action: "toggle"},
+			expectedDomain:  "switch",
 			expectedService: "toggle",
-			expectedData: map[string]interface{}{},
+			expectedData:    map[string]interface{}{},
 		},
 		{
-			name: "climate set temperature",
+			name:   "climate set temperature",
 			device: &models.Device{Type: models.DeviceTypeClimate},
 			action: models.DeviceAction{
-				Action: "set_temperature",
+				Action:     "set_temperature",
 				Parameters: map[string]any{"temperature": 22.5},
 			},
-			expectedDomain: "climate",
+			expectedDomain:  "climate",
 			expectedService: "set_temperature",
-			expectedData: map[string]interface{}{"temperature": 22.5},
+			expectedData:    map[string]interface{}{"temperature": 22.5},
 		},
 		{
-			name: "cover open",
-			device: &models.Device{Type: models.DeviceTypeCover},
-			action: models.DeviceAction{Action: "open"},
-			expectedDomain: "cover",
+			name:            "cover open",
+			device:          &models.Device{Type: models.DeviceTypeCover},
+			action:          models.DeviceAction{Action: "open"},
+			expectedDomain:  "cover",
 			expectedService: "open_cover",
-			expectedData: map[string]interface{}{},
+			expectedData:    map[string]interface{}{},
 		},
 		{
-			name: "fan set speed",
+			name:   "fan set speed",
 			device: &models.Device{Type: models.DeviceTypeFan},
 			action: models.DeviceAction{
-				Action: "set_speed",
+				Action:     "set_speed",
 				Parameters: map[string]any{"percentage": 75},
 			},
-			expectedDomain: "fan",
+			expectedDomain:  "fan",
 			expectedService: "set_percentage",
-			expectedData: map[string]interface{}{"percentage": 75},
+			expectedData:    map[string]interface{}{"percentage": 75},
 		},
 		{
-			name: "media player volume",
+			name:   "media player volume",
 			device: &models.Device{Type: models.DeviceTypeMedia},
 			action: models.DeviceAction{
-				Action: "volume_set",
+				Action:     "volume_set",
 				Parameters: map[string]any{"volume_level": 0.8},
 			},
-			expectedDomain: "media_player",
+			expectedDomain:  "media_player",
 			expectedService: "volume_set",
-			expectedData: map[string]interface{}{"volume_level": 0.8},
+			expectedData:    map[string]interface{}{"volume_level": 0.8},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			domain, service, serviceData := manager.mapActionToService(tt.device, tt.action)
-			
+
 			assert.Equal(t, tt.expectedDomain, domain)
 			assert.Equal(t, tt.expectedService, service)
 			assert.Equal(t, tt.expectedData, serviceData)

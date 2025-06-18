@@ -17,17 +17,17 @@ import (
 
 type Handler struct {
 	deviceManager       *device.Manager
-	llmService         *llm.Service
+	llmService          *llm.Service
 	conversationManager *conversation.Manager
-	startTime          time.Time
+	startTime           time.Time
 }
 
 func NewHandler(deviceManager *device.Manager, llmService *llm.Service, conversationManager *conversation.Manager) *Handler {
 	return &Handler{
 		deviceManager:       deviceManager,
-		llmService:         llmService,
+		llmService:          llmService,
 		conversationManager: conversationManager,
-		startTime:          time.Now(),
+		startTime:           time.Now(),
 	}
 }
 
@@ -40,11 +40,11 @@ func (h *Handler) HandleChat(c *gin.Context) {
 	}
 
 	startTime := time.Now()
-	
+
 	// Get or create conversation
 	var conv *models.Conversation
 	var err error
-	
+
 	if req.ConversationID != uuid.Nil {
 		conv, err = h.conversationManager.GetConversation(req.ConversationID)
 		if err != nil {
@@ -94,7 +94,9 @@ func (h *Handler) HandleChat(c *gin.Context) {
 	conv.Messages = append(conv.Messages, assistantMessage)
 
 	// Update conversation
-	h.conversationManager.UpdateConversation(conv)
+	if err := h.conversationManager.UpdateConversation(conv); err != nil {
+		logrus.WithError(err).Warn("Failed to update conversation")
+	}
 
 	// Return response
 	chatResponse := models.ChatResponse{
@@ -124,7 +126,7 @@ func (h *Handler) GetDevices(c *gin.Context) {
 // GetDevice returns a specific device by ID
 func (h *Handler) GetDevice(c *gin.Context) {
 	deviceID := c.Param("id")
-	
+
 	device, err := h.deviceManager.GetDevice(deviceID)
 	if err != nil {
 		logrus.WithError(err).Errorf("Failed to get device: %s", deviceID)
@@ -138,7 +140,7 @@ func (h *Handler) GetDevice(c *gin.Context) {
 // ControlDevice executes an action on a specific device
 func (h *Handler) ControlDevice(c *gin.Context) {
 	deviceID := c.Param("id")
-	
+
 	var action models.DeviceAction
 	if err := c.ShouldBindJSON(&action); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

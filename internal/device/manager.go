@@ -2,11 +2,12 @@ package device
 
 import (
 	"fmt"
-	"github.com/tienpdinh/gpt-home/pkg/homeassistant"
-	"github.com/tienpdinh/gpt-home/pkg/models"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/tienpdinh/gpt-home/pkg/homeassistant"
+	"github.com/tienpdinh/gpt-home/pkg/models"
 
 	"github.com/sirupsen/logrus"
 )
@@ -27,7 +28,7 @@ func NewManager(haClient homeassistant.ClientInterface) *Manager {
 
 func (m *Manager) GetAllDevices() ([]models.Device, error) {
 	m.devicesMutex.RLock()
-	
+
 	// Refresh devices if cache is stale (older than 30 seconds)
 	if time.Since(m.lastUpdate) > 30*time.Second {
 		m.devicesMutex.RUnlock()
@@ -44,7 +45,7 @@ func (m *Manager) GetAllDevices() ([]models.Device, error) {
 	}
 
 	defer m.devicesMutex.RUnlock()
-	
+
 	devices := make([]models.Device, 0, len(m.devices))
 	for _, device := range m.devices {
 		devices = append(devices, device)
@@ -64,12 +65,12 @@ func (m *Manager) GetDevice(deviceID string) (*models.Device, error) {
 		if err != nil {
 			return nil, fmt.Errorf("device not found: %s", deviceID)
 		}
-		
+
 		// Update cache
 		m.devicesMutex.Lock()
 		m.devices[deviceID] = *freshDevice
 		m.devicesMutex.Unlock()
-		
+
 		return freshDevice, nil
 	}
 
@@ -161,7 +162,7 @@ func (m *Manager) IsConnected() bool {
 
 func (m *Manager) mapActionToService(device *models.Device, action models.DeviceAction) (domain, service string, serviceData map[string]interface{}) {
 	serviceData = make(map[string]interface{})
-	
+
 	// Copy action parameters to service data
 	for key, value := range action.Parameters {
 		serviceData[key] = value

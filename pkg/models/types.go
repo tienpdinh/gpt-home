@@ -8,14 +8,14 @@ import (
 
 // Device represents a smart home device
 type Device struct {
-	ID           string            `json:"id"`
-	Name         string            `json:"name"`
-	Type         DeviceType        `json:"type"`
-	State        string            `json:"state"`
-	Attributes   map[string]any    `json:"attributes"`
-	LastUpdated  time.Time         `json:"last_updated"`
-	Domain       string            `json:"domain"`
-	EntityID     string            `json:"entity_id"`
+	ID          string         `json:"id"`
+	Name        string         `json:"name"`
+	Type        DeviceType     `json:"type"`
+	State       string         `json:"state"`
+	Attributes  map[string]any `json:"attributes"`
+	LastUpdated time.Time      `json:"last_updated"`
+	Domain      string         `json:"domain"`
+	EntityID    string         `json:"entity_id"`
 }
 
 // DeviceType represents the type of device
@@ -74,11 +74,11 @@ type Context struct {
 
 // Metadata represents additional message metadata
 type Metadata struct {
-	DevicesReferenced []string  `json:"devices_referenced,omitempty"`
-	ActionsPerformed  []string  `json:"actions_performed,omitempty"`
-	ProcessingTime    float64   `json:"processing_time,omitempty"`
-	ModelUsed         string    `json:"model_used,omitempty"`
-	Confidence        float64   `json:"confidence,omitempty"`
+	DevicesReferenced []string `json:"devices_referenced,omitempty"`
+	ActionsPerformed  []string `json:"actions_performed,omitempty"`
+	ProcessingTime    float64  `json:"processing_time,omitempty"`
+	ModelUsed         string   `json:"model_used,omitempty"`
+	Confidence        float64  `json:"confidence,omitempty"`
 }
 
 // ChatRequest represents an incoming chat request
@@ -90,12 +90,12 @@ type ChatRequest struct {
 
 // ChatResponse represents a chat response
 type ChatResponse struct {
-	Response       string        `json:"response"`
-	ConversationID uuid.UUID     `json:"conversation_id"`
-	MessageID      uuid.UUID     `json:"message_id"`
-	Context        Context       `json:"context"`
+	Response         string         `json:"response"`
+	ConversationID   uuid.UUID      `json:"conversation_id"`
+	MessageID        uuid.UUID      `json:"message_id"`
+	Context          Context        `json:"context"`
 	ActionsPerformed []DeviceAction `json:"actions_performed,omitempty"`
-	Metadata       Metadata      `json:"metadata"`
+	Metadata         Metadata       `json:"metadata"`
 }
 
 // HealthStatus represents system health
@@ -110,16 +110,16 @@ type HealthStatus struct {
 
 // Services represents status of different services
 type Services struct {
-	LLM            ServiceStatus `json:"llm"`
-	HomeAssistant  ServiceStatus `json:"home_assistant"`
-	Database       ServiceStatus `json:"database"`
+	LLM           ServiceStatus `json:"llm"`
+	HomeAssistant ServiceStatus `json:"home_assistant"`
+	Database      ServiceStatus `json:"database"`
 }
 
 // ServiceStatus represents the status of a service
 type ServiceStatus struct {
-	Status      string `json:"status"`
+	Status      string    `json:"status"`
 	LastChecked time.Time `json:"last_checked"`
-	Message     string `json:"message,omitempty"`
+	Message     string    `json:"message,omitempty"`
 }
 
 // LLMConfig represents LLM configuration

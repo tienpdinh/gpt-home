@@ -2,23 +2,24 @@ package mocks
 
 import (
 	"fmt"
-	"github.com/tienpdinh/gpt-home/pkg/models"
 	"time"
+
+	"github.com/tienpdinh/gpt-home/pkg/models"
 )
 
 // MockHomeAssistantClient is a mock implementation of the HomeAssistant client
 type MockHomeAssistantClient struct {
-	entities       []models.Device
+	entities        []models.Device
 	connectionError bool
-	serviceError   bool
+	serviceError    bool
 }
 
 // NewMockHomeAssistantClient creates a new mock HomeAssistant client
 func NewMockHomeAssistantClient() *MockHomeAssistantClient {
 	return &MockHomeAssistantClient{
-		entities:       createMockEntities(),
+		entities:        createMockEntities(),
 		connectionError: false,
-		serviceError:   false,
+		serviceError:    false,
 	}
 }
 
@@ -177,13 +178,13 @@ func createMockEntities() []models.Device {
 			Domain:   "climate",
 			EntityID: "climate.main",
 			Attributes: map[string]any{
-				"friendly_name":     "Main Thermostat",
-				"temperature":       22.0,
-				"target_temp_high":  24.0,
-				"target_temp_low":   20.0,
+				"friendly_name":       "Main Thermostat",
+				"temperature":         22.0,
+				"target_temp_high":    24.0,
+				"target_temp_low":     20.0,
 				"current_temperature": 21.5,
-				"hvac_mode":         "heat",
-				"hvac_modes":        []string{"off", "heat", "cool", "auto"},
+				"hvac_mode":           "heat",
+				"hvac_modes":          []string{"off", "heat", "cool", "auto"},
 			},
 			LastUpdated: time.Now(),
 		},
@@ -195,9 +196,9 @@ func createMockEntities() []models.Device {
 			Domain:   "sensor",
 			EntityID: "sensor.temperature",
 			Attributes: map[string]any{
-				"friendly_name": "Temperature Sensor",
+				"friendly_name":       "Temperature Sensor",
 				"unit_of_measurement": "°C",
-				"device_class": "temperature",
+				"device_class":        "temperature",
 			},
 			LastUpdated: time.Now(),
 		},
@@ -209,9 +210,9 @@ func createMockEntities() []models.Device {
 			Domain:   "cover",
 			EntityID: "cover.garage_door",
 			Attributes: map[string]any{
-				"friendly_name": "Garage Door",
+				"friendly_name":    "Garage Door",
 				"current_position": 0,
-				"device_class": "garage",
+				"device_class":     "garage",
 			},
 			LastUpdated: time.Now(),
 		},
@@ -237,11 +238,11 @@ func createMockEntities() []models.Device {
 			Domain:   "media_player",
 			EntityID: "media_player.living_room",
 			Attributes: map[string]any{
-				"friendly_name":  "Living Room Speaker",
-				"volume_level":   0.5,
+				"friendly_name":   "Living Room Speaker",
+				"volume_level":    0.5,
 				"is_volume_muted": false,
-				"media_title":    "",
-				"media_artist":   "",
+				"media_title":     "",
+				"media_artist":    "",
 			},
 			LastUpdated: time.Now(),
 		},
