@@ -38,3 +38,7 @@ require (
 	google.golang.org/protobuf v1.35.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+// Temporary fix for CI - force local package resolution
+replace github.com/tienpdinh/gpt-home/pkg/models => ./pkg/models
+replace github.com/tienpdinh/gpt-home/pkg/homeassistant => ./pkg/homeassistant
