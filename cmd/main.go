@@ -81,7 +81,7 @@ func main() {
 
 func setupLogging(level string) {
 	logrus.SetFormatter(&logrus.JSONFormatter{})
-	
+
 	switch level {
 	case "debug":
 		logrus.SetLevel(logrus.DebugLevel)
@@ -102,14 +102,14 @@ func setupRouter(cfg *config.Config, deviceManager *device.Manager, llmService *
 	}
 
 	router := gin.Default()
-	
+
 	// Add middleware
 	router.Use(gin.Recovery())
 	router.Use(gin.Logger())
 
 	// Initialize API handlers
 	apiHandler := api.NewHandler(deviceManager, llmService, conversationManager)
-	
+
 	// API routes
 	v1 := router.Group("/api/v1")
 	{

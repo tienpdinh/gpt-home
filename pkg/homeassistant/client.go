@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/tienpdinh/gpt-home/pkg/models"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/tienpdinh/gpt-home/pkg/models"
 
 	"github.com/sirupsen/logrus"
 )
@@ -19,12 +20,12 @@ type Client struct {
 }
 
 type HAEntity struct {
-	EntityID   string                 `json:"entity_id"`
-	State      string                 `json:"state"`
-	Attributes map[string]interface{} `json:"attributes"`
-	LastChanged string                `json:"last_changed"`
-	LastUpdated string                `json:"last_updated"`
-	Context    HAContext             `json:"context"`
+	EntityID    string                 `json:"entity_id"`
+	State       string                 `json:"state"`
+	Attributes  map[string]interface{} `json:"attributes"`
+	LastChanged string                 `json:"last_changed"`
+	LastUpdated string                 `json:"last_updated"`
+	Context     HAContext              `json:"context"`
 }
 
 type HAContext struct {
@@ -36,7 +37,7 @@ type HAContext struct {
 type HAServiceCall struct {
 	Domain      string                 `json:"domain"`
 	Service     string                 `json:"service"`
-	Target      *HAServiceTarget      `json:"target,omitempty"`
+	Target      *HAServiceTarget       `json:"target,omitempty"`
 	ServiceData map[string]interface{} `json:"service_data,omitempty"`
 }
 
@@ -67,7 +68,11 @@ func (c *Client) GetEntities() ([]models.Device, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to make request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			logrus.WithError(err).Warn("Failed to close response body")
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("API request failed with status: %d", resp.StatusCode)
@@ -101,7 +106,11 @@ func (c *Client) GetEntity(entityID string) (*models.Device, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to make request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			logrus.WithError(err).Warn("Failed to close response body")
+		}
+	}()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, fmt.Errorf("entity not found: %s", entityID)
@@ -148,7 +157,11 @@ func (c *Client) CallService(domain, service string, entityID string, serviceDat
 	if err != nil {
 		return fmt.Errorf("failed to make request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			logrus.WithError(err).Warn("Failed to close response body")
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -171,7 +184,11 @@ func (c *Client) TestConnection() error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to HomeAssistant: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			logrus.WithError(err).Warn("Failed to close response body")
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("HomeAssistant API returned status: %d", resp.StatusCode)

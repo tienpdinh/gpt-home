@@ -2,9 +2,10 @@ package conversation
 
 import (
 	"fmt"
-	"github.com/tienpdinh/gpt-home/pkg/models"
 	"sync"
 	"time"
+
+	"github.com/tienpdinh/gpt-home/pkg/models"
 
 	"github.com/google/uuid"
 )
@@ -162,6 +163,6 @@ func (m *Manager) GetConversationStats() map[string]interface{} {
 
 	return map[string]interface{}{
 		"total_conversations": len(m.conversations),
-		"total_messages":     totalMessages,
+		"total_messages":      totalMessages,
 	}
 }

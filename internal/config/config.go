@@ -11,9 +11,9 @@ import (
 type Config struct {
 	Server        ServerConfig        `json:"server"`
 	HomeAssistant HomeAssistantConfig `json:"home_assistant"`
-	LLM           LLMConfig          `json:"llm"`
+	LLM           LLMConfig           `json:"llm"`
 	Storage       StorageConfig       `json:"storage"`
-	LogLevel      string             `json:"log_level"`
+	LogLevel      string              `json:"log_level"`
 }
 
 type ServerConfig struct {

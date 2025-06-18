@@ -33,7 +33,7 @@ func TestLoadModel(t *testing.T) {
 
 	// Verify loaded state
 	assert.True(t, service.IsLoaded())
-	
+
 	modelInfo := service.GetModelInfo()
 	assert.True(t, modelInfo.Loaded)
 	assert.Equal(t, "tinyllama-chat", modelInfo.Name)
@@ -108,7 +108,7 @@ func TestProcessMessageLightCommands(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			response, actions, err := service.ProcessMessage(tt.message, context)
-			
+
 			require.NoError(t, err)
 			assert.Contains(t, response, tt.expectedInResp)
 			assert.Len(t, actions, 1)
@@ -160,7 +160,7 @@ func TestProcessMessageTemperatureCommands(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			response, actions, err := service.ProcessMessage(tt.message, context)
-			
+
 			require.NoError(t, err)
 			assert.NotEmpty(t, response)
 
@@ -197,7 +197,7 @@ func TestProcessMessageStatusQueries(t *testing.T) {
 	for _, message := range tests {
 		t.Run(message, func(t *testing.T) {
 			response, actions, err := service.ProcessMessage(message, context)
-			
+
 			require.NoError(t, err)
 			assert.NotEmpty(t, response)
 			assert.Empty(t, actions) // Status queries shouldn't generate actions
@@ -219,7 +219,7 @@ func TestProcessMessageDefaultResponse(t *testing.T) {
 
 	// Test with unrecognized command
 	response, actions, err := service.ProcessMessage("make me a sandwich", context)
-	
+
 	require.NoError(t, err)
 	assert.NotEmpty(t, response)
 	assert.Empty(t, actions)
@@ -252,7 +252,7 @@ func TestParseCommandVariations(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.message, func(t *testing.T) {
 			response, actions, err := service.ProcessMessage(tt.message, context)
-			
+
 			require.NoError(t, err)
 			assert.NotEmpty(t, response)
 			assert.Len(t, actions, 1)
@@ -339,7 +339,7 @@ func TestServiceConfiguration(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			service := NewService(tt.modelPath, tt.modelType)
-			
+
 			assert.Equal(t, tt.modelPath, service.modelPath)
 			assert.Equal(t, tt.modelType, service.modelType)
 			assert.Equal(t, tt.modelType+"-chat", service.modelInfo.Name)
