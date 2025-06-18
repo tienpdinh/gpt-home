@@ -20,7 +20,7 @@ jobs:
         go-version: ${{ matrix.go-version }}
 
     - name: Cache Go modules
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cache/go-build
@@ -61,7 +61,7 @@ jobs:
         fail_ci_if_error: false
 
     - name: Upload coverage artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: coverage-report-${{ matrix.go-version }}
         path: |
@@ -115,7 +115,7 @@ jobs:
         go build -a -installsuffix cgo -ldflags '-extldflags "-static"' -o gpt-home-${{ matrix.goos }}-${{ matrix.goarch }} ./cmd/main.go
 
     - name: Upload build artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: gpt-home-${{ matrix.goos }}-${{ matrix.goarch }}
         path: gpt-home-${{ matrix.goos }}-${{ matrix.goarch }}
