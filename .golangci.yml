@@ -3,13 +3,6 @@ run:
   issues-exit-code: 1
   tests: true
 
-issues:
-  exclude-dirs:
-    - vendor
-    - test/fixtures
-  exclude-files:
-    - ".*_mock.go"
-
 output:
   formats:
     - format: colored-line-number
@@ -107,6 +100,11 @@ linters:
     - whitespace
 
 issues:
+  exclude-dirs:
+    - vendor
+    - test/fixtures
+  exclude-files:
+    - ".*_mock.go"
   exclude-rules:
     - path: _test\.go
       linters:
@@ -122,13 +120,10 @@ issues:
         - mnd
         - funlen
         - dupl
-
   exclude-use-default: false
   exclude-case-sensitive: false
-  
   include:
     - EXC0002
-
   max-issues-per-linter: 0
   max-same-issues: 0
   new: false
