@@ -30,8 +30,7 @@ go.work
 ehthumbs.db
 Thumbs.db
 
-# Models
-models/
+# AI/ML Models (not the Go models package)
 *.bin
 *.gguf
 *.ggml
