@@ -47,6 +47,9 @@ jobs:
     - name: Verify dependencies
       run: go mod verify
 
+    - name: Clean and tidy modules
+      run: go mod tidy
+
     - name: Debug module status
       run: |
         pwd
@@ -56,9 +59,6 @@ jobs:
         go env GOMOD
         echo "Listing packages in module..."
         go list ./...
-
-    - name: Clean and tidy modules
-      run: go mod tidy
 
     - name: Run go vet
       run: go vet ./...
