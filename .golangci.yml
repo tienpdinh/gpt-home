@@ -55,6 +55,8 @@ linters-settings:
           - (github.com/golangci/golangci-lint/pkg/logutils.Log).Warnf
           - (github.com/golangci/golangci-lint/pkg/logutils.Log).Errorf
           - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
+      shadow:
+        strict: false
     enable:
       - shadow
   lll:
@@ -90,7 +92,6 @@ linters:
     - noctx
     - nolintlint
     - rowserrcheck
-    - shadow
     - staticcheck
     - stylecheck
     - typecheck
