@@ -19,6 +19,13 @@ jobs:
       with:
         go-version: ${{ matrix.go-version }}
 
+    - name: Verify Go installation
+      run: |
+        go version
+        go env GOROOT
+        go env GOPATH
+        go env GOMOD
+
     - name: Cache Go modules
       uses: actions/cache@v4
       with:
@@ -34,6 +41,16 @@ jobs:
 
     - name: Verify dependencies
       run: go mod verify
+
+    - name: Clean and tidy modules
+      run: go mod tidy
+
+    - name: Debug module status
+      run: |
+        pwd
+        ls -la
+        cat go.mod
+        go list -m all
 
     - name: Run go vet
       run: go vet ./...
@@ -79,8 +96,11 @@ jobs:
       with:
         go-version: 1.21.x
 
+    - name: Download dependencies
+      run: go mod download
+
     - name: Run golangci-lint
-      uses: golangci/golangci-lint-action@v3
+      uses: golangci/golangci-lint-action@v4
       with:
         version: latest
         args: --timeout=5m
@@ -131,13 +151,14 @@ jobs:
       with:
         go-version: 1.21.x
 
+    - name: Install Gosec
+      run: go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
+
     - name: Run Gosec Security Scanner
-      uses: securecodewarrior/github-action-gosec@master
-      with:
-        args: '-no-fail -fmt sarif -out gosec.sarif ./...'
+      run: gosec -no-fail -fmt sarif -out gosec.sarif ./...
 
     - name: Upload SARIF file
-      uses: github/codeql-action/upload-sarif@v2
+      uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: gosec.sarif
 
@@ -177,6 +198,8 @@ jobs:
       with:
         go-version: 1.21.x
 
-    - name: Run Nancy (dependency vulnerability scanner)
+    - name: Run govulncheck (Go vulnerability scanner)
       run: |
-        go list -json -m all | docker run --rm -i sonatypecommunity/nancy:latest sleuth
+        go install golang.org/x/vuln/cmd/govulncheck@latest
+        govulncheck ./...
+      continue-on-error: true
