@@ -47,14 +47,14 @@ func setupTestHandler() *Handler {
 	deviceManager := device.NewManager(haClient)
 	llmService := llm.NewService("/tmp/test", "test")
 	conversationManager := conversation.NewManager()
-	
+
 	return NewHandler(deviceManager, llmService, conversationManager)
 }
 
 func setupTestRouter(handler *Handler) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	
+
 	router.POST("/chat", handler.HandleChat)
 	router.GET("/devices", handler.GetDevices)
 	router.GET("/devices/:id", handler.GetDevice)
@@ -62,13 +62,13 @@ func setupTestRouter(handler *Handler) *gin.Engine {
 	router.GET("/conversations/:id", handler.GetConversation)
 	router.DELETE("/conversations/:id", handler.DeleteConversation)
 	router.GET("/health", handler.HealthCheck)
-	
+
 	return router
 }
 
 func TestNewHandler(t *testing.T) {
 	handler := setupTestHandler()
-	
+
 	assert.NotNil(t, handler)
 	assert.NotNil(t, handler.deviceManager)
 	assert.NotNil(t, handler.llmService)
@@ -99,11 +99,11 @@ func TestGetDevices_Success(t *testing.T) {
 	router.ServeHTTP(w, request)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	
+
 	var response map[string][]models.Device
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(t, err)
-	
+
 	assert.Len(t, response["devices"], 2)
 	assert.Equal(t, "light.1", response["devices"][0].ID)
 }
@@ -118,11 +118,11 @@ func TestGetDevice_Success(t *testing.T) {
 	router.ServeHTTP(w, request)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	
+
 	var response models.Device
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(t, err)
-	
+
 	assert.Equal(t, "light.1", response.ID)
 	assert.Equal(t, "Test Light", response.Name)
 }
@@ -158,11 +158,11 @@ func TestControlDevice_Success(t *testing.T) {
 	router.ServeHTTP(w, request)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	
+
 	var response map[string]string
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(t, err)
-	
+
 	assert.Equal(t, "success", response["status"])
 }
 
@@ -241,11 +241,11 @@ func TestHealthCheck(t *testing.T) {
 	router.ServeHTTP(w, request)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	
+
 	var response models.HealthStatus
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(t, err)
-	
+
 	assert.Equal(t, "healthy", response.Status)
 	assert.Equal(t, "1.0.0", response.Version)
 	assert.Equal(t, "error", response.Services.LLM.Status) // LLM not loaded in test
@@ -267,9 +267,9 @@ func TestHandler_RouteRegistration(t *testing.T) {
 	}{
 		{"POST", "/chat", false},
 		{"GET", "/devices", false},
-		{"GET", "/devices/light.1", false},           // Use existing device
-		{"POST", "/devices/light.1/control", false}, // Use existing device
-		{"GET", "/conversations/550e8400-e29b-41d4-a716-446655440000", false},   // Returns 404 but route exists
+		{"GET", "/devices/light.1", false},                                       // Use existing device
+		{"POST", "/devices/light.1/control", false},                              // Use existing device
+		{"GET", "/conversations/550e8400-e29b-41d4-a716-446655440000", false},    // Returns 404 but route exists
 		{"DELETE", "/conversations/550e8400-e29b-41d4-a716-446655440000", false}, // Returns 500 but route exists
 		{"GET", "/health", false},
 	}
@@ -283,7 +283,7 @@ func TestHandler_RouteRegistration(t *testing.T) {
 			if route.expectedNotFound {
 				assert.Equal(t, http.StatusNotFound, w.Code, "Route should not exist: %s %s", route.method, route.path)
 			} else {
-				// For conversation routes that return 404 due to business logic (not found entity), 
+				// For conversation routes that return 404 due to business logic (not found entity),
 				// we should check that the route was matched (not a routing 404)
 				// For route-level 404s, Gin typically returns a different response
 				if w.Code == http.StatusNotFound && (route.path == "/conversations/550e8400-e29b-41d4-a716-446655440000") {
