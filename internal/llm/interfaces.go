@@ -11,10 +11,10 @@ type LLMBackend interface {
 
 // GenerationConfig holds parameters for text generation
 type GenerationConfig struct {
-	MaxTokens   int     `json:"max_tokens"`
-	Temperature float32 `json:"temperature"`
-	TopP        float32 `json:"top_p"`
-	TopK        int     `json:"top_k"`
+	MaxTokens   int      `json:"max_tokens"`
+	Temperature float32  `json:"temperature"`
+	TopP        float32  `json:"top_p"`
+	TopK        int      `json:"top_k"`
 	StopTokens  []string `json:"stop_tokens"`
 }
 
@@ -49,7 +49,7 @@ Common actions:
 - set_volume (media_player, value 0-1)
 
 Be conversational and helpful. If you can't determine the specific device, ask for clarification.`,
-	
+
 	UserTemplate: `User request: {{.Message}}
 
 {{if .Context.ReferencedDevices}}

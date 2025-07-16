@@ -50,7 +50,7 @@ func (b *LocalBackend) LoadModel() error {
 	// For now, we'll implement a simple validation
 	// In production, you would start llama.cpp server or load the model
 	logrus.Infof("Loading local model from: %s", b.modelPath)
-	
+
 	// Validate model file
 	if !strings.HasSuffix(b.modelPath, ".gguf") && !strings.HasSuffix(b.modelPath, ".bin") {
 		logrus.Warnf("Model file may not be in correct format: %s", b.modelPath)
@@ -58,7 +58,7 @@ func (b *LocalBackend) LoadModel() error {
 
 	b.isLoaded = true
 	b.modelInfo.Loaded = true
-	
+
 	logrus.Infof("Local model %s loaded successfully", b.modelType)
 	return nil
 }
@@ -75,7 +75,7 @@ func (b *LocalBackend) UnloadModel() error {
 
 	b.isLoaded = false
 	b.modelInfo.Loaded = false
-	
+
 	logrus.Info("Local model unloaded")
 	return nil
 }
@@ -139,13 +139,13 @@ func (b *LocalBackend) generateWithLlamaCpp(prompt string, config GenerationConf
 // generateSmartFallback provides intelligent responses when llama.cpp is not available
 func (b *LocalBackend) generateSmartFallback(prompt string) (string, error) {
 	logrus.Debug("Using smart fallback for LLM generation")
-	
+
 	// Extract user message from prompt
 	userMessage := b.extractUserMessage(prompt)
-	
+
 	// Generate smart response based on patterns
 	response := b.generateSmartResponse(userMessage)
-	
+
 	return response, nil
 }
 
@@ -163,7 +163,7 @@ func (b *LocalBackend) extractUserMessage(prompt string) string {
 // generateSmartResponse creates intelligent responses with proper JSON formatting
 func (b *LocalBackend) generateSmartResponse(message string) string {
 	message = strings.ToLower(strings.TrimSpace(message))
-	
+
 	// Light control patterns
 	if strings.Contains(message, "turn on") && (strings.Contains(message, "light") || strings.Contains(message, "lamp")) {
 		response := map[string]interface{}{
@@ -178,7 +178,7 @@ func (b *LocalBackend) generateSmartResponse(message string) string {
 		}
 		return b.toJSON(response)
 	}
-	
+
 	if strings.Contains(message, "turn off") && (strings.Contains(message, "light") || strings.Contains(message, "lamp")) {
 		response := map[string]interface{}{
 			"response": "I'll turn off the lights for you.",
@@ -192,7 +192,7 @@ func (b *LocalBackend) generateSmartResponse(message string) string {
 		}
 		return b.toJSON(response)
 	}
-	
+
 	if strings.Contains(message, "dim") && (strings.Contains(message, "light") || strings.Contains(message, "lamp")) {
 		response := map[string]interface{}{
 			"response": "I'll dim the lights for you.",
@@ -206,7 +206,7 @@ func (b *LocalBackend) generateSmartResponse(message string) string {
 		}
 		return b.toJSON(response)
 	}
-	
+
 	// Temperature control
 	if strings.Contains(message, "temperature") || strings.Contains(message, "thermostat") {
 		if strings.Contains(message, "set") || strings.Contains(message, "change") {
@@ -228,7 +228,7 @@ func (b *LocalBackend) generateSmartResponse(message string) string {
 		}
 		return b.toJSON(response)
 	}
-	
+
 	// Music/Media control
 	if strings.Contains(message, "music") || strings.Contains(message, "play") {
 		response := map[string]interface{}{
@@ -243,7 +243,7 @@ func (b *LocalBackend) generateSmartResponse(message string) string {
 		}
 		return b.toJSON(response)
 	}
-	
+
 	// Status queries
 	if strings.Contains(message, "status") || strings.Contains(message, "what") || strings.Contains(message, "how") {
 		response := map[string]interface{}{
@@ -252,7 +252,7 @@ func (b *LocalBackend) generateSmartResponse(message string) string {
 		}
 		return b.toJSON(response)
 	}
-	
+
 	// Default response
 	response := map[string]interface{}{
 		"response": "I understand you want to control your smart home, but I'm not sure exactly what you'd like me to do. Could you be more specific? I can help with lights, temperature, and music.",

@@ -24,7 +24,7 @@ func TestNewService(t *testing.T) {
 	assert.NotNil(t, service)
 	assert.NotNil(t, service.backend)
 	assert.False(t, service.IsLoaded())
-	
+
 	modelInfo := service.GetModelInfo()
 	assert.Equal(t, "tinyllama-local", modelInfo.Name)
 	assert.Equal(t, "tinyllama", modelInfo.Type)
@@ -83,7 +83,7 @@ func TestGetModelInfo(t *testing.T) {
 func TestProcessMessageWithoutLoadedModel(t *testing.T) {
 	tempFile, cleanup := createTempModel(t, "test-unloaded")
 	defer cleanup()
-	
+
 	service := NewService(tempFile, "tinyllama")
 	context := models.Context{
 		ReferencedDevices: []string{},
@@ -99,7 +99,7 @@ func TestProcessMessageWithoutLoadedModel(t *testing.T) {
 func TestProcessMessageLightCommands(t *testing.T) {
 	tempFile, cleanup := createTempModel(t, "test-lights")
 	defer cleanup()
-	
+
 	service := NewService(tempFile, "tinyllama")
 	err := service.LoadModel()
 	require.NoError(t, err)
@@ -155,7 +155,7 @@ func TestProcessMessageLightCommands(t *testing.T) {
 func TestProcessMessageTemperatureCommands(t *testing.T) {
 	tempFile, cleanup := createTempModel(t, "test-temp")
 	defer cleanup()
-	
+
 	service := NewService(tempFile, "tinyllama")
 	err := service.LoadModel()
 	require.NoError(t, err)
@@ -214,7 +214,7 @@ func TestProcessMessageTemperatureCommands(t *testing.T) {
 func TestProcessMessageStatusQueries(t *testing.T) {
 	tempFile, cleanup := createTempModel(t, "test-status")
 	defer cleanup()
-	
+
 	service := NewService(tempFile, "tinyllama")
 	err := service.LoadModel()
 	require.NoError(t, err)
@@ -246,7 +246,7 @@ func TestProcessMessageStatusQueries(t *testing.T) {
 func TestProcessMessageDefaultResponse(t *testing.T) {
 	tempFile, cleanup := createTempModel(t, "test-default")
 	defer cleanup()
-	
+
 	service := NewService(tempFile, "tinyllama")
 	err := service.LoadModel()
 	require.NoError(t, err)
@@ -270,7 +270,7 @@ func TestProcessMessageDefaultResponse(t *testing.T) {
 func TestParseCommandVariations(t *testing.T) {
 	tempFile, cleanup := createTempModel(t, "test-variations")
 	defer cleanup()
-	
+
 	service := NewService(tempFile, "tinyllama")
 	err := service.LoadModel()
 	require.NoError(t, err)
@@ -307,7 +307,7 @@ func TestParseCommandVariations(t *testing.T) {
 func TestUnloadModel(t *testing.T) {
 	tempFile, cleanup := createTempModel(t, "test-unload")
 	defer cleanup()
-	
+
 	service := NewService(tempFile, "tinyllama")
 
 	// Load model first
@@ -327,7 +327,7 @@ func TestUnloadModel(t *testing.T) {
 func TestConcurrentProcessing(t *testing.T) {
 	tempFile, cleanup := createTempModel(t, "test-concurrent")
 	defer cleanup()
-	
+
 	service := NewService(tempFile, "tinyllama")
 	err := service.LoadModel()
 	require.NoError(t, err)

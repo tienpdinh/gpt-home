@@ -14,10 +14,10 @@ import (
 )
 
 type Service struct {
-	backend   LLMBackend
-	config    GenerationConfig
-	template  PromptTemplate
-	mutex     sync.RWMutex
+	backend  LLMBackend
+	config   GenerationConfig
+	template PromptTemplate
+	mutex    sync.RWMutex
 }
 
 type ModelInfo struct {
