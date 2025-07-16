@@ -128,9 +128,9 @@ func (b *LocalBackend) generateWithLlamaCpp(prompt string, config GenerationConf
 	}
 
 	cmd := exec.Command(llamaCppPath, args...)
-	output, err := cmd.Output()
-	if err != nil {
-		logrus.Warnf("llama.cpp execution failed: %v, falling back to smart response", err)
+	output, execErr := cmd.Output()
+	if execErr != nil {
+		logrus.Warnf("llama.cpp execution failed: %v, falling back to smart response", execErr)
 		return b.generateSmartFallback(prompt)
 	}
 
