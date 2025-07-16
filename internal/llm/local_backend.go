@@ -42,7 +42,7 @@ func (b *LocalBackend) LoadModel() error {
 	defer b.mutex.Unlock()
 
 	// Check if model file exists
-	if _, err := os.Stat(b.modelPath); os.IsNotExist(err) {
+	if _, statErr := os.Stat(b.modelPath); os.IsNotExist(statErr) {
 		return fmt.Errorf("model file not found: %s", b.modelPath)
 	}
 
@@ -68,8 +68,8 @@ func (b *LocalBackend) UnloadModel() error {
 	defer b.mutex.Unlock()
 
 	if b.process != nil {
-		if err := b.process.Process.Kill(); err != nil {
-			logrus.Warnf("Failed to kill process: %v", err)
+		if killErr := b.process.Process.Kill(); killErr != nil {
+			logrus.Warnf("Failed to kill process: %v", killErr)
 		}
 		b.process = nil
 	}
@@ -264,9 +264,9 @@ func (b *LocalBackend) generateSmartResponse(message string) string {
 
 // toJSON converts response to JSON string
 func (b *LocalBackend) toJSON(response map[string]interface{}) string {
-	jsonBytes, err := json.Marshal(response)
-	if err != nil {
-		logrus.Errorf("Failed to marshal response to JSON: %v", err)
+	jsonBytes, marshalErr := json.Marshal(response)
+	if marshalErr != nil {
+		logrus.Errorf("Failed to marshal response to JSON: %v", marshalErr)
 		return `{"response": "I encountered an error processing your request.", "actions": []}`
 	}
 	return string(jsonBytes)
