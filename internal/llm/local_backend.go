@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"sync"
 
@@ -69,7 +68,9 @@ func (b *LocalBackend) UnloadModel() error {
 	defer b.mutex.Unlock()
 
 	if b.process != nil {
-		b.process.Process.Kill()
+		if err := b.process.Process.Kill(); err != nil {
+			logrus.Warnf("Failed to kill process: %v", err)
+		}
 		b.process = nil
 	}
 
@@ -111,7 +112,7 @@ func (b *LocalBackend) GenerateResponse(prompt string, config GenerationConfig) 
 func (b *LocalBackend) generateWithLlamaCpp(prompt string, config GenerationConfig) (string, error) {
 	// Check if llama.cpp is available
 	llamaCppPath := "llama.cpp" // You might need to adjust this path
-	if _, err := exec.LookPath(llamaCppPath); err != nil {
+	if _, lookupErr := exec.LookPath(llamaCppPath); lookupErr != nil {
 		// Fallback to a smart pattern-based response for development
 		return b.generateSmartFallback(prompt)
 	}
@@ -271,15 +272,5 @@ func (b *LocalBackend) toJSON(response map[string]interface{}) string {
 	return string(jsonBytes)
 }
 
-// createModelDirectory creates the models directory if it doesn't exist
-func (b *LocalBackend) createModelDirectory() error {
-	modelDir := filepath.Dir(b.modelPath)
-	return os.MkdirAll(modelDir, 0755)
-}
-
-// downloadModel downloads a model file (placeholder for future implementation)
-func (b *LocalBackend) downloadModel() error {
-	// This would implement model downloading logic
-	// For now, just create the directory
-	return b.createModelDirectory()
-}
+// Note: createModelDirectory and downloadModel methods removed as they were unused
+// These can be added back when implementing model download functionality
