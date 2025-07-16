@@ -1,6 +1,7 @@
 package llm
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -8,27 +9,44 @@ import (
 	"github.com/tienpdinh/gpt-home/pkg/models"
 )
 
+// createTempModel creates a temporary model file for testing
+func createTempModel(t *testing.T, name string) (string, func()) {
+	tempFile := "/tmp/" + name + ".gguf"
+	f, err := os.Create(tempFile)
+	require.NoError(t, err)
+	f.Close()
+	return tempFile, func() { os.Remove(tempFile) }
+}
+
 func TestNewService(t *testing.T) {
 	service := NewService("/path/to/model.bin", "tinyllama")
 
 	assert.NotNil(t, service)
-	assert.Equal(t, "/path/to/model.bin", service.modelPath)
-	assert.Equal(t, "tinyllama", service.modelType)
-	assert.False(t, service.isLoaded)
-	assert.Equal(t, "tinyllama-chat", service.modelInfo.Name)
-	assert.Equal(t, "tinyllama", service.modelInfo.Type)
-	assert.Equal(t, "1.0.0", service.modelInfo.Version)
-	assert.False(t, service.modelInfo.Loaded)
+	assert.NotNil(t, service.backend)
+	assert.False(t, service.IsLoaded())
+	
+	modelInfo := service.GetModelInfo()
+	assert.Equal(t, "tinyllama-local", modelInfo.Name)
+	assert.Equal(t, "tinyllama", modelInfo.Type)
+	assert.Equal(t, "1.0.0", modelInfo.Version)
+	assert.False(t, modelInfo.Loaded)
 }
 
 func TestLoadModel(t *testing.T) {
-	service := NewService("/path/to/model.bin", "tinyllama")
+	// Create a temporary model file for testing
+	tempFile := "/tmp/test-model.gguf"
+	f, err := os.Create(tempFile)
+	require.NoError(t, err)
+	f.Close()
+	defer os.Remove(tempFile)
+
+	service := NewService(tempFile, "tinyllama")
 
 	// Test initial state
 	assert.False(t, service.IsLoaded())
 
 	// Load model
-	err := service.LoadModel()
+	err = service.LoadModel()
 	require.NoError(t, err)
 
 	// Verify loaded state
@@ -36,15 +54,22 @@ func TestLoadModel(t *testing.T) {
 
 	modelInfo := service.GetModelInfo()
 	assert.True(t, modelInfo.Loaded)
-	assert.Equal(t, "tinyllama-chat", modelInfo.Name)
+	assert.Equal(t, "tinyllama-local", modelInfo.Name)
 	assert.Equal(t, "tinyllama", modelInfo.Type)
 }
 
 func TestGetModelInfo(t *testing.T) {
-	service := NewService("/custom/model/phi2.bin", "phi2")
+	// Create a temporary model file for testing
+	tempFile := "/tmp/test-phi2.gguf"
+	f, err := os.Create(tempFile)
+	require.NoError(t, err)
+	f.Close()
+	defer os.Remove(tempFile)
+
+	service := NewService(tempFile, "phi2")
 
 	modelInfo := service.GetModelInfo()
-	assert.Equal(t, "phi2-chat", modelInfo.Name)
+	assert.Equal(t, "phi2-local", modelInfo.Name)
 	assert.Equal(t, "phi2", modelInfo.Type)
 	assert.Equal(t, "1.0.0", modelInfo.Version)
 	assert.False(t, modelInfo.Loaded)
@@ -56,7 +81,10 @@ func TestGetModelInfo(t *testing.T) {
 }
 
 func TestProcessMessageWithoutLoadedModel(t *testing.T) {
-	service := NewService("/path/to/model.bin", "tinyllama")
+	tempFile, cleanup := createTempModel(t, "test-unloaded")
+	defer cleanup()
+	
+	service := NewService(tempFile, "tinyllama")
 	context := models.Context{
 		ReferencedDevices: []string{},
 		UserPreferences:   make(map[string]string),
@@ -69,7 +97,10 @@ func TestProcessMessageWithoutLoadedModel(t *testing.T) {
 }
 
 func TestProcessMessageLightCommands(t *testing.T) {
-	service := NewService("/path/to/model.bin", "tinyllama")
+	tempFile, cleanup := createTempModel(t, "test-lights")
+	defer cleanup()
+	
+	service := NewService(tempFile, "tinyllama")
 	err := service.LoadModel()
 	require.NoError(t, err)
 
@@ -115,14 +146,17 @@ func TestProcessMessageLightCommands(t *testing.T) {
 			assert.Equal(t, tt.expectedAction, actions[0].Action)
 
 			if tt.expectedAction == "set_brightness" {
-				assert.Equal(t, 128, actions[0].Parameters["brightness"])
+				assert.Equal(t, float64(128), actions[0].Parameters["brightness"])
 			}
 		})
 	}
 }
 
 func TestProcessMessageTemperatureCommands(t *testing.T) {
-	service := NewService("/path/to/model.bin", "tinyllama")
+	tempFile, cleanup := createTempModel(t, "test-temp")
+	defer cleanup()
+	
+	service := NewService(tempFile, "tinyllama")
 	err := service.LoadModel()
 	require.NoError(t, err)
 
@@ -168,7 +202,7 @@ func TestProcessMessageTemperatureCommands(t *testing.T) {
 				assert.Len(t, actions, 1)
 				assert.Equal(t, tt.expectedAction, actions[0].Action)
 				if tt.expectedAction == "set_temperature" {
-					assert.Equal(t, 22, actions[0].Parameters["temperature"])
+					assert.Equal(t, float64(22), actions[0].Parameters["temperature"])
 				}
 			} else {
 				assert.Empty(t, actions)
@@ -178,7 +212,10 @@ func TestProcessMessageTemperatureCommands(t *testing.T) {
 }
 
 func TestProcessMessageStatusQueries(t *testing.T) {
-	service := NewService("/path/to/model.bin", "tinyllama")
+	tempFile, cleanup := createTempModel(t, "test-status")
+	defer cleanup()
+	
+	service := NewService(tempFile, "tinyllama")
 	err := service.LoadModel()
 	require.NoError(t, err)
 
@@ -207,7 +244,10 @@ func TestProcessMessageStatusQueries(t *testing.T) {
 }
 
 func TestProcessMessageDefaultResponse(t *testing.T) {
-	service := NewService("/path/to/model.bin", "tinyllama")
+	tempFile, cleanup := createTempModel(t, "test-default")
+	defer cleanup()
+	
+	service := NewService(tempFile, "tinyllama")
 	err := service.LoadModel()
 	require.NoError(t, err)
 
@@ -228,7 +268,10 @@ func TestProcessMessageDefaultResponse(t *testing.T) {
 }
 
 func TestParseCommandVariations(t *testing.T) {
-	service := NewService("/path/to/model.bin", "tinyllama")
+	tempFile, cleanup := createTempModel(t, "test-variations")
+	defer cleanup()
+	
+	service := NewService(tempFile, "tinyllama")
 	err := service.LoadModel()
 	require.NoError(t, err)
 
@@ -262,7 +305,10 @@ func TestParseCommandVariations(t *testing.T) {
 }
 
 func TestUnloadModel(t *testing.T) {
-	service := NewService("/path/to/model.bin", "tinyllama")
+	tempFile, cleanup := createTempModel(t, "test-unload")
+	defer cleanup()
+	
+	service := NewService(tempFile, "tinyllama")
 
 	// Load model first
 	err := service.LoadModel()
@@ -279,7 +325,10 @@ func TestUnloadModel(t *testing.T) {
 }
 
 func TestConcurrentProcessing(t *testing.T) {
-	service := NewService("/path/to/model.bin", "tinyllama")
+	tempFile, cleanup := createTempModel(t, "test-concurrent")
+	defer cleanup()
+	
+	service := NewService(tempFile, "tinyllama")
 	err := service.LoadModel()
 	require.NoError(t, err)
 
@@ -339,11 +388,11 @@ func TestServiceConfiguration(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			service := NewService(tt.modelPath, tt.modelType)
+			modelInfo := service.GetModelInfo()
 
-			assert.Equal(t, tt.modelPath, service.modelPath)
-			assert.Equal(t, tt.modelType, service.modelType)
-			assert.Equal(t, tt.modelType+"-chat", service.modelInfo.Name)
-			assert.Equal(t, tt.modelType, service.modelInfo.Type)
+			assert.NotNil(t, service.backend)
+			assert.Equal(t, tt.modelType+"-local", modelInfo.Name)
+			assert.Equal(t, tt.modelType, modelInfo.Type)
 		})
 	}
 }
