@@ -1,0 +1,115 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gpt-home
+  labels:
+    app: gpt-home
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: gpt-home
+  template:
+    metadata:
+      labels:
+        app: gpt-home
+    spec:
+      containers:
+      - name: gpt-home
+        image: gpt-home:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        env:
+        - name: SERVER_PORT
+          value: "8080"
+        - name: SERVER_HOST
+          value: "0.0.0.0"
+        - name: SERVER_MODE
+          value: "release"
+        - name: LOG_LEVEL
+          value: "info"
+        - name: HA_URL
+          valueFrom:
+            configMapKeyRef:
+              name: gpt-home-config
+              key: ha-url
+        - name: HA_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: gpt-home-secrets
+              key: ha-token
+        - name: LLM_MODEL_PATH
+          value: "/models/tinyllama-1.1b-chat-q4_0.bin"
+        - name: LLM_MODEL_TYPE
+          value: "tinyllama"
+        - name: STORAGE_TYPE
+          value: "memory"
+        - name: STORAGE_IN_MEMORY
+          value: "true"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        volumeMounts:
+        - name: model-storage
+          mountPath: /models
+        - name: data-storage
+          mountPath: /data
+        livenessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: gpt-home-models-pvc
+      - name: data-storage
+        persistentVolumeClaim:
+          claimName: gpt-home-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gpt-home-service
+  labels:
+    app: gpt-home
+spec:
+  selector:
+    app: gpt-home
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gpt-home-ingress
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  rules:
+  - host: gpt-home.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: gpt-home-service
+            port:
+              number: 80

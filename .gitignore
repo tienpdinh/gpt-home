@@ -1,0 +1,56 @@
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+gpt-home
+*.test
+*.out
+go.work
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# AI/ML Models (not the Go models package)
+*.bin
+*.gguf
+*.ggml
+
+# Data
+data/
+*.db
+*.sqlite
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+.tmp
+
+# Docker
+.docker/
+
+# Kubernetes
+*.kubeconfig

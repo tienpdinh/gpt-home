@@ -1,0 +1,902 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1.1in]{geometry}
+\usepackage{indentfirst}
+\usepackage{setspace}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{rotating}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{tabularx}
+\usepackage{ltxtable}
+
+% Code listing style
+\lstdefinestyle{golang}{
+    language=C,
+    basicstyle=\ttfamily\footnotesize,
+    backgroundcolor=\color{gray!10},
+    frame=single,
+    breaklines=true,
+    captionpos=b,
+    keywordstyle=\color{blue}\bfseries,
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{red},
+    numberstyle=\tiny\color{gray},
+    identifierstyle=\color{black},
+    emphstyle=\color{purple}\bfseries,
+    emph={type,struct,func,package,import,var,const,interface,map,chan,select,go,defer,return,if,else,for,range,switch,case,default},
+    morecomment=[l]{//},
+    morecomment=[s]{/*}{*/},
+    morestring=[b]",
+    morestring=[b]`,
+    showstringspaces=false,
+    tabsize=4
+}
+
+\lstset{
+    style=golang,
+    basicstyle=\ttfamily\footnotesize,
+    backgroundcolor=\color{gray!10},
+    frame=single,
+    breaklines=true,
+    captionpos=b,
+    keywordstyle=\color{blue}\bfseries,
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{red},
+    showstringspaces=false
+}
+
+\title{GPT-Home: Design Documents and Test Cases}
+\author{Tien Dinh\\\texttt{PDinh@my.harrisburgu.edu}}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+This document presents the comprehensive design documentation and test cases for GPT-Home, a privacy-first conversational AI system for smart home control. The document is structured into three main sections: High-Level Design (HLD), Detailed Design (Low-Level Design), and Test Cases, providing a complete view of the system architecture, implementation details, and validation strategies.
+
+GPT-Home operates entirely on edge hardware using a Raspberry Pi cluster with Kubernetes orchestration, ensuring privacy while demonstrating sophisticated conversational AI capabilities in resource-constrained environments.
+
+\section{High-Level Design (HLD)}
+
+\subsection{System Architecture Overview}
+
+The GPT-Home system follows a microservices architecture deployed on a Kubernetes cluster, consisting of four primary architectural layers that work together to provide natural language control of smart home devices.
+
+\subsubsection{Architectural Layers}
+
+\textbf{1. Presentation Layer} encompasses the web-based user interface for chat interactions, RESTful API endpoints for external integrations, static file serving for frontend assets, and real-time communication handling.
+
+\textbf{2. Application Layer} contains the Natural Language Processing Engine, Conversation Management System, Device Control Orchestration, and Authentication and Authorization components.
+
+\textbf{3. Integration Layer} includes the HomeAssistant REST API Client, Device State Management, External Service Connectors, and Protocol Translation Services.
+
+\textbf{4. Infrastructure Layer} provides Kubernetes Orchestration (K3s), Persistent Storage Management, Container Runtime Environment, and Network and Service Discovery capabilities.
+
+\subsubsection{Core System Components}
+
+The system is composed of six major components that interact to provide comprehensive smart home control capabilities:
+
+\textbf{API Gateway Component} handles all incoming HTTP requests, provides RESTful API endpoints, manages request routing and load balancing, and implements security and rate limiting measures.
+
+\textbf{Natural Language Processing Engine} processes user commands using quantized language models, supports TinyLlama-1.1B and Phi-2 Q4 models, handles intent recognition and entity extraction, and manages model loading and inference optimization.
+
+\textbf{Conversation Manager} maintains conversation history and context, tracks device references across dialogue turns, manages user preferences and session data, and implements context-aware response generation.
+
+\textbf{Device Manager} orchestrates device discovery and registration, maintains real-time device state information, handles device control command execution, and provides device capability and status reporting.
+
+\textbf{HomeAssistant Integration Service} implements HomeAssistant REST API client functionality, manages authentication with HA instance, translates generic device commands to HA-specific calls, and handles real-time state synchronization.
+
+\textbf{Configuration Management Service} manages system configuration and settings, handles environment variable processing, provides runtime configuration updates, and manages model and deployment parameters.
+
+\subsubsection{Component Interaction Flow}
+
+The system follows a request-response pattern with the following interaction flow: the user submits natural language command via web interface, the API Gateway receives request and routes to appropriate handler, the Conversation Manager retrieves context and updates session state, the NLP Engine processes command using loaded language model, the Device Manager identifies target devices and required actions, the HomeAssistant Integration executes device control commands, the response flows back through components to user interface, and finally the Conversation Manager updates context with completed actions.
+
+\subsubsection{Data Flow Architecture}
+
+\textbf{Input Data Flow} follows the path from User Input through API Gateway to Conversation Manager and finally to NLP Engine. Context Data flows from Conversation Manager to NLP Engine, while Device State information flows from Device Manager to HomeAssistant Integration.
+
+\textbf{Processing Data Flow} progresses from NLP Processing through Intent Recognition to Device Identification. Command Translation leads to Device Action and subsequently to HA API Call. State Update triggers Context Update which culminates in Response Generation.
+
+\textbf{Output Data Flow} moves from Response Generation through API Gateway to User Interface. Device State Updates flow from Device Manager to Context Manager, while Logging Data proceeds from System Monitoring to Health Status reporting.
+
+\subsubsection{Deployment Architecture}
+
+The system deploys on a 4-node Raspberry Pi cluster with the following distribution:
+
+\textbf{Master Node (1x Pi 4B - 4GB)} runs the K3s control plane, etcd data store, API server and scheduler, along with system monitoring services.
+
+\textbf{Worker Nodes (3x Pi 4B - 4GB)} handle application pod execution, language model inference, persistent storage management, and provide load balancing and redundancy capabilities.
+
+\subsection{Integration Points}
+
+\subsubsection{External Integrations}
+
+\textbf{HomeAssistant Integration} utilizes REST API over HTTP/HTTPS protocol with long-lived access tokens for authentication, JSON format for data exchange, and planned WebSocket connections for real-time updates as a future enhancement.
+
+\textbf{Language Model Integration} employs quantized GGUF format models with CPU-optimized inference engine, dynamic model switching capability, and efficient quantized model handling for memory management.
+
+\subsubsection{Internal Service Communication}
+
+\textbf{Inter-Component Communication} operates through HTTP REST APIs with Kubernetes DNS for service discovery, Kubernetes Service mesh for load balancing, and circuit breaker patterns for error handling.
+
+\textbf{Data Persistence} stores conversation history on local file system, configuration data in Kubernetes ConfigMaps and Secrets, models in Persistent Volumes, and maintains structured JSON logging throughout the system.
+
+\section{Detailed Design (Low-Level Design)}
+
+\subsection{Component-Level Design}
+
+\subsubsection{API Handler Component}
+
+\textbf{Class Structure:}
+\begin{lstlisting}[language=Go, caption=API Handler Structure]
+type Handler struct {
+    deviceManager       *device.Manager
+    llmService          *llm.Service
+    conversationManager *conversation.Manager
+    logger              *logrus.Logger
+}
+
+// Core API Methods
+func (h *Handler) HandleChat(c *gin.Context)
+func (h *Handler) GetDevices(c *gin.Context)
+func (h *Handler) GetDevice(c *gin.Context)
+func (h *Handler) ControlDevice(c *gin.Context)
+func (h *Handler) GetConversation(c *gin.Context)
+func (h *Handler) DeleteConversation(c *gin.Context)
+func (h *Handler) HealthCheck(c *gin.Context)
+\end{lstlisting}
+
+\textbf{Chat Processing Algorithm} validates incoming ChatRequest structure, extracts conversation ID or creates new conversation, retrieves conversation context from ConversationManager, processes message through LLM Service, parses LLM response for device commands, executes device actions through DeviceManager, updates conversation context with actions performed, generates ChatResponse with results and metadata, and returns structured JSON response.
+
+\textbf{Error Handling Strategy} maps request validation errors to HTTP 400 Bad Request, authentication errors to HTTP 401 Unauthorized, device not found situations to HTTP 404 Not Found, internal processing errors to HTTP 500 Internal Server Error, and timeout errors to HTTP 504 Gateway Timeout responses.
+
+\subsubsection{Device Manager Component}
+
+\textbf{Class Structure:}
+\begin{lstlisting}[language=Go, caption=Device Manager Structure]
+type Manager struct {
+    haClient     homeassistant.Client
+    devices      map[string]*models.Device
+    devicesMutex sync.RWMutex
+    logger       *logrus.Logger
+}
+
+// Core Device Operations
+func (m *Manager) GetAllDevices() ([]models.Device, error)
+func (m *Manager) GetDevice(deviceID string) (*models.Device, error)
+func (m *Manager) ControlDevice(deviceID string, action models.DeviceAction) error
+func (m *Manager) RefreshDeviceStates() error
+func (m *Manager) FindDevicesByName(name string) []models.Device
+\end{lstlisting}
+
+\textbf{Device Discovery Algorithm} queries HomeAssistant /api/states endpoint, parses JSON response into Device structures, filters devices by supported types (light, switch, sensor, climate), extracts device attributes and capabilities, stores devices in thread-safe map with device ID as key, updates last refresh timestamp, and logs discovery results and any errors.
+
+\textbf{Device Control Flow} validates device ID exists in local cache, translates generic action to HomeAssistant service call, constructs HA API request with service and target entity, executes HTTP POST to /api/services/{domain}/{service}, parses response for success/failure indication, updates local device state cache, and returns action result with metadata.
+
+\subsubsection{Language Model Service}
+
+\textbf{Class Structure:}
+\begin{lstlisting}[language=Go, caption=LLM Service Structure]
+type Service struct {
+    modelPath   string
+    modelType   string
+    model       *Model // Placeholder for actual model interface
+    isLoaded    bool
+    loadMutex   sync.Mutex
+    config      models.LLMConfig
+    logger      *logrus.Logger
+}
+
+// Model Management Methods
+func (s *Service) LoadModel() error
+func (s *Service) GenerateResponse(prompt string, context Context) (string, error)
+func (s *Service) IsModelLoaded() bool
+func (s *Service) GetModelInfo() ModelInfo
+func (s *Service) UpdateConfig(config models.LLMConfig) error
+\end{lstlisting}
+
+\textbf{Model Loading Algorithm} acquires exclusive lock on model loading, validates model file exists and is readable, determines model type (TinyLlama or Phi-2), initializes model with quantization parameters, loads model weights into memory, verifies model functionality with test prompt, sets loaded flag and releases lock, and logs model information and memory usage.
+
+\textbf{Response Generation Process} validates model is loaded and ready, constructs prompt with conversation context, applies temperature and sampling parameters, runs inference with token limits, post-processes output for device commands, extracts structured actions from response, generates metadata (processing time, confidence), and returns formatted response with extracted actions.
+
+\subsubsection{Conversation Manager}
+
+\textbf{Class Structure:}
+\begin{lstlisting}[language=Go, caption=Conversation Manager Structure]
+type Manager struct {
+    conversations map[uuid.UUID]*models.Conversation
+    convMutex     sync.RWMutex
+    storage       ConversationStorage
+    logger        *logrus.Logger
+}
+
+// Conversation Operations
+func (m *Manager) CreateConversation() *models.Conversation
+func (m *Manager) GetConversation(id uuid.UUID) (*models.Conversation, error)
+func (m *Manager) AddMessage(id uuid.UUID, message models.Message) error
+func (m *Manager) UpdateContext(id uuid.UUID, context models.Context) error
+func (m *Manager) DeleteConversation(id uuid.UUID) error
+\end{lstlisting}
+
+\textbf{Context Management Algorithm} extracts device references from user message, updates referenced devices list in conversation context, merges new context with existing session data, applies context window limits (last N messages), updates user preferences based on interactions, stores context changes to persistent storage, and maintains context consistency across conversation turns.
+
+\subsubsection{HomeAssistant Client}
+
+\textbf{Class Structure:}
+\begin{lstlisting}[language=Go, caption=HomeAssistant Client Structure]
+type Client struct {
+    baseURL    string
+    token      string
+    httpClient *http.Client
+    logger     *logrus.Logger
+}
+
+// API Methods
+func (c *Client) GetStates() ([]HAState, error)
+func (c *Client) GetState(entityID string) (*HAState, error)
+func (c *Client) CallService(domain, service string, data interface{}) error
+func (c *Client) TestConnection() error
+\end{lstlisting}
+
+\textbf{API Communication Protocol} prepares HTTP request with authentication headers, sets Authorization: Bearer {token} header, configures request timeout and retry logic, executes HTTP request to HomeAssistant endpoint, parses JSON response and handles HTTP status codes, converts HA entities to internal Device models, implements exponential backoff for failed requests, and logs all API interactions for debugging.
+
+\subsection{Data Structures and Algorithms}
+
+\subsubsection{Core Data Models}
+
+\textbf{Device Model:}
+\begin{lstlisting}[language=Go, caption=Device Data Structure]
+type Device struct {
+    ID          string         `json:"id"`
+    Name        string         `json:"name"`
+    Type        DeviceType     `json:"type"`
+    State       string         `json:"state"`
+    Attributes  map[string]any `json:"attributes"`
+    LastUpdated time.Time      `json:"last_updated"`
+    Domain      string         `json:"domain"`
+    EntityID    string         `json:"entity_id"`
+}
+\end{lstlisting}
+
+\textbf{Conversation Model:}
+\begin{lstlisting}[language=Go, caption=Conversation Data Structure]
+type Conversation struct {
+    ID        uuid.UUID `json:"id"`
+    Messages  []Message `json:"messages"`
+    CreatedAt time.Time `json:"created_at"`
+    UpdatedAt time.Time `json:"updated_at"`
+    Context   Context   `json:"context"`
+}
+\end{lstlisting}
+
+\subsubsection{Key Algorithms}
+
+\textbf{Device Name Matching Algorithm} normalizes user input (lowercase, remove articles), extracts potential device names using NLP, computes fuzzy string matching scores, filters by device type hints from context, ranks matches by similarity and recency, and returns top matches with confidence scores.
+
+\textbf{Context Window Management} maintains sliding window of recent messages, prioritizes messages with device interactions, compresses older messages while preserving device references, applies token limits for LLM context, and maintains conversation coherence across sessions.
+
+\section{Test Cases}
+
+\subsection{Test Case Template Structure}
+
+Each test case follows a standardized structure for clarity and completeness, including a unique Test Case ID, descriptive Test Case Title, identification of the Module/Component being tested, Required Preconditions for setup and initial conditions, detailed Test Steps providing step-by-step procedure, Expected Results outlining anticipated outcomes, space for Actual Results from test execution, Status indication of Pass/Fail/Blocked, Priority level of High/Medium/Low, and specification of required Test Data.
+
+\subsection{Unit Test Cases}
+
+\subsubsection{Device Manager Tests}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|>{\bfseries}p{4.5cm}|X|}
+\hline
+Test Case ID & TC-DM-001 \\
+\hline
+Test Case Title & Device Discovery and Registration \\
+\hline
+Module/Component & Device Manager \\
+\hline
+Priority & High \\
+\hline
+Preconditions & 
+HomeAssistant instance running, Valid API token configured, At least 5 devices registered in HA \\
+\hline
+Test Steps & 
+\begin{minipage}[t]{\linewidth}
+\vspace{2pt}
+1. Initialize Device Manager with HA client \\
+2. Call GetAllDevices() method \\
+3. Verify device count matches HA device count \\
+4. Check device data completeness \\
+5. Validate device type mapping
+\vspace{2pt}
+\end{minipage} \\
+\hline
+Expected Results & 
+\begin{minipage}[t]{\linewidth}
+\vspace{2pt}
+All HA devices discovered successfully, Device attributes properly mapped, No duplicate device entries, Device states accurately reflected
+\vspace{2pt}
+\end{minipage} \\
+\hline
+Test Data & Mock HA response with 5 light, 3 switch, 2 sensor devices \\
+\hline
+\end{tabularx}
+\end{table}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|>{\bfseries}p{4.5cm}|X|}
+\hline
+Test Case ID & TC-DM-002 \\
+\hline
+Test Case Title & Device Control Execution \\
+\hline
+Module/Component & Device Manager \\
+\hline
+Priority & High \\
+\hline
+Preconditions & 
+Device Manager initialized, Target light device available, Device in known state (off) \\
+\hline
+Test Steps & 
+\begin{minipage}[t]{\linewidth}
+\vspace{2pt}
+1. Create DeviceAction for "turn\_on" \\
+2. Call ControlDevice() with light device ID \\
+3. Verify HA API call executed \\
+4. Check device state updated \\
+5. Confirm action success response
+\vspace{2pt}
+\end{minipage} \\
+\hline
+Expected Results & 
+\begin{minipage}[t]{\linewidth}
+\vspace{2pt}
+Device state changes from "off" to "on", HA service call successful, Local device cache updated, No error returned
+\vspace{2pt}
+\end{minipage} \\
+\hline
+Test Data & Light device ID: "light.living\_room", Action: \{"action": "turn\_on"\} \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsubsection{Conversation Manager Tests}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|>{\bfseries}p{4.5cm}|X|}
+\hline
+Test Case ID & TC-CM-001 \\
+\hline
+Test Case Title & Conversation Creation and Management \\
+\hline
+Module/Component & Conversation Manager \\
+\hline
+Priority & High \\
+\hline
+Preconditions & 
+Conversation Manager initialized, Empty conversation store \\
+\hline
+Test Steps & 
+\begin{minipage}[t]{\linewidth}
+\vspace{2pt}
+1. Call CreateConversation() \\
+2. Verify UUID generated \\
+3. Check initial conversation state \\
+4. Add first user message \\
+5. Retrieve conversation by ID
+\vspace{2pt}
+\end{minipage} \\
+\hline
+Expected Results & 
+\begin{minipage}[t]{\linewidth}
+\vspace{2pt}
+Valid UUID assigned to conversation, Empty messages array initially, Timestamps set correctly, Message added successfully, Conversation retrievable by ID
+\vspace{2pt}
+\end{minipage} \\
+\hline
+Test Data & User message: "Turn on the living room lights" \\
+\hline
+\end{tabularx}
+\end{table}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|>{\bfseries}p{4.5cm}|X|}
+\hline
+Test Case ID & TC-CM-002 \\
+\hline
+Test Case Title & Context Management and Device Reference Tracking \\
+\hline
+Module/Component & Conversation Manager \\
+\hline
+Priority & Medium \\
+\hline
+Preconditions & 
+Active conversation exists, Previous message referenced "bedroom lights" \\
+\hline
+Test Steps & 
+\begin{minipage}[t]{\linewidth}
+\vspace{2pt}
+1. Add message referencing "them" (pronoun) \\
+2. Update context with device references \\
+3. Verify device reference resolution \\
+4. Check context continuity \\
+5. Validate session data persistence
+\vspace{2pt}
+\end{minipage} \\
+\hline
+Expected Results & 
+\begin{minipage}[t]{\linewidth}
+\vspace{2pt}
+"them" resolves to "bedroom lights", Referenced devices list updated, Context maintains device history, Session data persists correctly
+\vspace{2pt}
+\end{minipage} \\
+\hline
+Test Data & Follow-up message: "Turn them off" \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsubsection{LLM Service Tests}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|>{\bfseries}p{4.5cm}|X|}
+\hline
+Test Case ID & TC-LLM-001 \\
+\hline
+Test Case Title & Model Loading and Initialization \\
+\hline
+Module/Component & LLM Service \\
+\hline
+Priority & High \\
+\hline
+Preconditions & 
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+- Model file exists at specified path
+- Sufficient memory available (>2GB)
+- LLM Service instantiated
+\vspace{2pt}\end{minipage} \\
+\hline
+Test Steps & 
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+1. Call LoadModel() method
+2. Monitor memory usage during loading
+3. Verify model loaded flag set
+4. Test basic inference capability
+5. Check model metadata
+\vspace{2pt}\end{minipage} \\
+\hline
+Expected Results & 
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+- Model loads without errors
+- Memory usage within 1.5GB limit
+- IsModelLoaded() returns true
+- Test inference generates response
+- Model info accessible
+\vspace{2pt}\end{minipage} \\
+\hline
+Test Data & Model path: "./models/tinyllama-1.1b-chat-q4\_0.bin" \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsubsection{HomeAssistant Client Tests}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|>{\bfseries}p{4.5cm}|X|}
+\hline
+Test Case ID & TC-HA-001 \\
+\hline
+Test Case Title & API Connection and Authentication \\
+\hline
+Module/Component & HomeAssistant Client \\
+\hline
+Priority & High \\
+\hline
+Preconditions & 
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+- HomeAssistant instance accessible
+- Valid long-lived access token
+- Network connectivity established
+\vspace{2pt}\end{minipage} \\
+\hline
+Test Steps & 
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+1. Initialize client with URL and token
+2. Call TestConnection() method
+3. Verify HTTP status 200 response
+4. Check authentication headers
+5. Validate response format
+\vspace{2pt}\end{minipage} \\
+\hline
+Expected Results & 
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+- Connection established successfully
+- Authentication successful
+- API responds with valid data
+- No timeout or connection errors
+\vspace{2pt}\end{minipage} \\
+\hline
+Test Data & HA URL: "http://homeassistant.local:8123", Token: "mock\_token\_123" \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Integration Test Cases}
+
+\subsubsection{End-to-End Workflow Tests}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|>{\bfseries}p{4.5cm}|X|}
+\hline
+Test Case ID & TC-E2E-001 \\
+\hline
+Test Case Title & Complete Device Control Workflow \\
+\hline
+Module/Component & Full System Integration \\
+\hline
+Priority & High \\
+\hline
+Preconditions & 
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+- All system components running
+- HomeAssistant connected
+- LLM model loaded
+- Test devices available
+\vspace{2pt}\end{minipage} \\
+\hline
+Test Steps & 
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+1. Send POST to /api/v1/chat with device command
+2. Verify request processed through all components
+3. Check LLM generates appropriate response
+4. Confirm device action executed
+5. Validate response structure
+\vspace{2pt}\end{minipage} \\
+\hline
+Expected Results & 
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+- Chat request processed successfully
+- Device command extracted correctly
+- HA device state changed
+- Response includes action confirmation
+- Conversation context updated
+\vspace{2pt}\end{minipage} \\
+\hline
+Test Data & \{"message": "Turn on the living room lights", "conversation\_id": null\} \\
+\hline
+\end{tabularx}
+\end{table}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|>{\bfseries}p{4.5cm}|X|}
+\hline
+Test Case ID & TC-E2E-002 \\
+\hline
+Test Case Title & Multi-Turn Conversation with Context \\
+\hline
+Module/Component & Full System Integration \\
+\hline
+Priority & Medium \\
+\hline
+Preconditions & 
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+- System fully operational
+- Previous conversation established
+- Device references in context
+\vspace{2pt}\end{minipage} \\
+\hline
+Test Steps & 
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+1. Send first message: "Turn on bedroom lights"
+2. Send follow-up: "Make them dimmer"
+3. Verify context resolution
+4. Check device actions applied correctly
+5. Validate conversation continuity
+\vspace{2pt}\end{minipage} \\
+\hline
+Expected Results & 
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+- First command executed successfully
+- "them" resolves to "bedroom lights"
+- Dimming action applied to correct devices
+- Context maintained across turns
+- Conversation history preserved
+\vspace{2pt}\end{minipage} \\
+\hline
+Test Data & Two sequential chat requests with pronoun reference \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Performance Test Cases}
+
+\subsubsection{Response Time Tests}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|>{\bfseries}p{4.5cm}|X|}
+\hline
+Test Case ID & TC-PERF-001 \\
+\hline
+Test Case Title & Response Time Performance \\
+\hline
+Module/Component & Full System Performance \\
+\hline
+Priority & High \\
+\hline
+Preconditions & 
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+- System under normal load
+- Model warmed up with initial requests
+- Stable network conditions
+\vspace{2pt}\end{minipage} \\
+\hline
+Test Steps & 
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+1. Send 10 sequential chat requests
+2. Measure end-to-end response times
+3. Record processing time for each component
+4. Calculate average and 95th percentile
+5. Verify against SLA requirements
+\vspace{2pt}\end{minipage} \\
+\hline
+Expected Results & 
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+- Average response time < 3 seconds
+- 95th percentile < 5 seconds
+- No timeouts or failures
+- Consistent performance across requests
+\vspace{2pt}\end{minipage} \\
+\hline
+Test Data & Standard device control commands with varying complexity \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsubsection{Concurrent User Tests}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|>{\bfseries}p{4.5cm}|X|}
+\hline
+Test Case ID & TC-PERF-002 \\
+\hline
+Test Case Title & Concurrent User Load Testing \\
+\hline
+Module/Component & System Concurrency \\
+\hline
+Priority & Medium \\
+\hline
+Preconditions & 
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+- System deployed on full cluster
+- Multiple test user sessions prepared
+- Load testing tools configured
+\vspace{2pt}\end{minipage} \\
+\hline
+Test Steps & 
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+1. Simulate 5 concurrent users
+2. Each user sends requests every 10 seconds
+3. Monitor system resource usage
+4. Check for request failures
+5. Measure response time degradation
+\vspace{2pt}\end{minipage} \\
+\hline
+Expected Results & 
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+- All requests processed successfully
+- Response times remain under 5 seconds
+- Memory usage stays under 3GB per node
+- No system crashes or errors
+\vspace{2pt}\end{minipage} \\
+\hline
+Test Data & 5 simulated users with diverse command patterns \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Error Handling Test Cases}
+
+\subsubsection{Component Failure Tests}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|>{\bfseries}p{4.5cm}|X|}
+\hline
+Test Case ID & TC-ERR-001 \\
+\hline
+Test Case Title & HomeAssistant Connection Failure \\
+\hline
+Module/Component & Error Handling \\
+\hline
+Priority & High \\
+\hline
+Preconditions & 
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+- System running normally
+- HomeAssistant instance accessible
+\vspace{2pt}\end{minipage} \\
+\hline
+Test Steps & 
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+1. Stop HomeAssistant service
+2. Send device control request
+3. Verify error handling
+4. Check user feedback
+5. Restart HA and test recovery
+\vspace{2pt}\end{minipage} \\
+\hline
+Expected Results & 
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+- Graceful error handling
+- User receives informative error message
+- System remains stable
+- Automatic recovery when HA returns
+- No data corruption
+\vspace{2pt}\end{minipage} \\
+\hline
+Test Data & Standard device control request during HA outage \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsubsection{Invalid Input Tests}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|>{\bfseries}p{4.5cm}|X|}
+\hline
+Test Case ID & TC-ERR-002 \\
+\hline
+Test Case Title & Invalid Chat Request Handling \\
+\hline
+Module/Component & Input Validation \\
+\hline
+Priority & Medium \\
+\hline
+Preconditions & 
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+- API endpoint accessible
+- System operational
+\vspace{2pt}\end{minipage} \\
+\hline
+Test Steps & 
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+1. Send empty message request
+2. Send malformed JSON
+3. Send excessively long message
+4. Send invalid conversation ID
+5. Verify error responses
+\vspace{2pt}\end{minipage} \\
+\hline
+Expected Results & 
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+- HTTP 400 Bad Request for invalid input
+- Descriptive error messages
+- No system crashes
+- Request validation prevents processing
+- Proper error logging
+\vspace{2pt}\end{minipage} \\
+\hline
+Test Data & Various malformed and invalid request payloads \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Security Test Cases}
+
+\subsubsection{Authentication Tests}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|>{\bfseries}p{4.5cm}|X|}
+\hline
+Test Case ID & TC-SEC-001 \\
+\hline
+Test Case Title & HomeAssistant Token Validation \\
+\hline
+Module/Component & Security/Authentication \\
+\hline
+Priority & High \\
+\hline
+Preconditions & 
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+- System configured with valid HA token
+- HomeAssistant authentication enabled
+\vspace{2pt}\end{minipage} \\
+\hline
+Test Steps & 
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+1. Configure invalid HA token
+2. Attempt device discovery
+3. Verify authentication failure
+4. Check error handling
+5. Restore valid token and test recovery
+\vspace{2pt}\end{minipage} \\
+\hline
+Expected Results & 
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+- Authentication failure detected
+- HTTP 401 Unauthorized response
+- No device data exposed
+- Clear error messaging
+- System recovers with valid token
+\vspace{2pt}\end{minipage} \\
+\hline
+Test Data & Invalid HA token: "invalid\_token\_xyz" \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsubsection{Data Privacy Tests}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|>{\bfseries}p{4.5cm}|X|}
+\hline
+Test Case ID & TC-SEC-002 \\
+\hline
+Test Case Title & Local Data Storage Validation \\
+\hline
+Module/Component & Data Privacy \\
+\hline
+Priority & High \\
+\hline
+Preconditions & 
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+- Conversation data generated
+- System running in isolated environment
+- Network monitoring tools available
+\vspace{2pt}\end{minipage} \\
+\hline
+Test Steps & 
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+1. Monitor network traffic during operation
+2. Verify no external data transmission
+3. Check conversation storage location
+4. Validate data encryption at rest
+5. Confirm no cloud service calls
+\vspace{2pt}\end{minipage} \\
+\hline
+Expected Results & 
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+- No external network traffic except to HA
+- All data stored locally
+- Conversation data encrypted
+- No cloud service dependencies
+- Complete offline operation capability
+\vspace{2pt}\end{minipage} \\
+\hline
+Test Data & Sample conversations with sensitive home information \\
+\hline
+\end{tabularx}
+\end{table}
+
+\section{Conclusion}
+
+This document provides comprehensive design documentation and test cases for the GPT-Home system, covering both high-level architectural design and detailed implementation specifications. The design follows modern software engineering principles with clear separation of concerns, robust error handling, and scalable architecture suitable for edge deployment.
+
+The test cases ensure comprehensive coverage of functional requirements, performance criteria, error conditions, and security considerations. The structured approach to testing validates both individual components and integrated system behavior, ensuring reliable operation in the target Raspberry Pi cluster environment.
+
+The modular design and thorough testing framework support the project's goals of demonstrating practical edge AI deployment while maintaining privacy and reliability standards required for smart home automation systems.
+
+\end{document}
