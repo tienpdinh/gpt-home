@@ -5,9 +5,11 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tienpdinh/gpt-home/internal/config"
 	"github.com/tienpdinh/gpt-home/pkg/models"
 )
 
@@ -365,6 +367,210 @@ func TestConcurrentProcessing(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		<-done
 	}
+}
+
+func TestNewServiceWithConfig(t *testing.T) {
+	cfg := config.LLMConfig{
+		OllamaURL:   "http://test-server:11434",
+		Model:       "test-model",
+		MaxTokens:   1024,
+		Temperature: 0.5,
+		TopP:        0.8,
+		TopK:        50,
+		Timeout:     60,
+	}
+
+	service := NewServiceWithConfig("http://test-server:11434", "test-model", cfg)
+
+	assert.NotNil(t, service)
+	assert.Equal(t, "http://test-server:11434", service.ollamaURL)
+	assert.Equal(t, "test-model", service.modelName)
+	assert.Equal(t, "test-model-chat", service.modelInfo.Name)
+	assert.Equal(t, "test-model", service.modelInfo.Type)
+	assert.Equal(t, "ollama", service.modelInfo.Version)
+	assert.False(t, service.isConnected)
+	
+	// Check config values
+	assert.Equal(t, 1024, service.config.MaxTokens)
+	assert.Equal(t, float32(0.5), service.config.Temperature)
+	assert.Equal(t, float32(0.8), service.config.TopP)
+	assert.Equal(t, 50, service.config.TopK)
+	assert.Equal(t, time.Duration(60)*time.Second, service.config.Timeout)
+}
+
+func TestParseCommand_AllScenarios(t *testing.T) {
+	service := NewService("http://localhost:11434", "llama3.2")
+	context := models.Context{
+		ReferencedDevices: []string{},
+		UserPreferences:   make(map[string]string),
+		SessionData:       make(map[string]any),
+	}
+
+	tests := []struct {
+		name           string
+		message        string
+		expectedResp   string
+		expectedAction string
+		hasAction      bool
+	}{
+		{
+			name:           "turn on lights",
+			message:        "turn on the light",
+			expectedResp:   "I'll turn on the lights for you.",
+			expectedAction: "turn_on",
+			hasAction:      true,
+		},
+		{
+			name:           "turn off lights",
+			message:        "turn off the light",
+			expectedResp:   "I'll turn off the lights for you.",
+			expectedAction: "turn_off",
+			hasAction:      true,
+		},
+		{
+			name:           "dim lights",
+			message:        "dim the light",
+			expectedResp:   "I'll dim the lights for you.",
+			expectedAction: "set_brightness",
+			hasAction:      true,
+		},
+		{
+			name:         "temperature query",
+			message:      "what's the temperature?",
+			expectedResp: "The current temperature is 22°C. Would you like me to adjust it?",
+			hasAction:    false,
+		},
+		{
+			name:           "set temperature",
+			message:        "set the temperature to 24",
+			expectedResp:   "I'll adjust the temperature for you.",
+			expectedAction: "set_temperature",
+			hasAction:      true,
+		},
+		{
+			name:         "thermostat query",
+			message:      "check the thermostat",
+			expectedResp: "The current temperature is 22°C. Would you like me to adjust it?",
+			hasAction:    false,
+		},
+		{
+			name:         "status query",
+			message:      "what's the status?",
+			expectedResp: "I can help you control your smart home devices. Try asking me to turn on lights, adjust temperature, or check device status.",
+			hasAction:    false,
+		},
+		{
+			name:         "what query",
+			message:      "what devices do you have?",
+			expectedResp: "I can help you control your smart home devices. Try asking me to turn on lights, adjust temperature, or check device status.",
+			hasAction:    false,
+		},
+		{
+			name:         "unknown command",
+			message:      "make me coffee",
+			expectedResp: "I understand you want to control your smart home, but I'm not sure exactly what you'd like me to do. Could you be more specific?",
+			hasAction:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			response, actions := service.parseCommand(tt.message, context)
+
+			assert.Equal(t, tt.expectedResp, response)
+			if tt.hasAction {
+				assert.Len(t, actions, 1)
+				assert.Equal(t, tt.expectedAction, actions[0].Action)
+				
+				// Test specific parameter values
+				if tt.expectedAction == "set_brightness" {
+					assert.Equal(t, 128, actions[0].Parameters["brightness"])
+				} else if tt.expectedAction == "set_temperature" {
+					assert.Equal(t, 22, actions[0].Parameters["temperature"])
+				}
+			} else {
+				assert.Empty(t, actions)
+			}
+		})
+	}
+}
+
+func TestTestConnection_ErrorCases(t *testing.T) {
+	// Test server that returns different status codes
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/tags" {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("Internal Server Error"))
+		}
+	}))
+	defer server.Close()
+
+	service := NewService(server.URL, "test-model")
+
+	err := service.testConnection()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "ollama server returned status 500")
+}
+
+func TestCheckModel_ErrorCases(t *testing.T) {
+	// Test server that returns bad request for model check
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/generate" {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(`{"error":"model not found"}`))
+		}
+	}))
+	defer server.Close()
+
+	service := NewService(server.URL, "nonexistent-model")
+
+	err := service.checkModel()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "model test failed")
+}
+
+func TestGenerateResponse_ErrorCases(t *testing.T) {
+	// Test timeout scenario
+	service := NewService("http://localhost:11434", "test-model")
+	service.config.Timeout = 1 * time.Millisecond // Very short timeout
+
+	// This should timeout
+	_, err := service.generateResponse("test prompt")
+	assert.Error(t, err)
+}
+
+func TestGenerateResponse_JSONErrors(t *testing.T) {
+	// Test server that returns invalid JSON
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/generate" {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("invalid json"))
+		}
+	}))
+	defer server.Close()
+
+	service := NewService(server.URL, "test-model")
+
+	_, err := service.generateResponse("test prompt")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to decode response")
+}
+
+func TestGenerateResponse_OllamaError(t *testing.T) {
+	// Test server that returns Ollama error
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/generate" {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{"error":"model error","done":true}`))
+		}
+	}))
+	defer server.Close()
+
+	service := NewService(server.URL, "test-model")
+
+	_, err := service.generateResponse("test prompt")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "Ollama error: model error")
 }
 
 func TestServiceConfiguration(t *testing.T) {
