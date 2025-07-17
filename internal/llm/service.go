@@ -138,7 +138,11 @@ func (s *Service) testConnection() error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			logrus.Warnf("Failed to close response body: %v", closeErr)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("ollama server returned status %d", resp.StatusCode)
@@ -165,7 +169,11 @@ func (s *Service) checkModel() error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			logrus.Warnf("Failed to close response body: %v", closeErr)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -199,19 +207,19 @@ func (s *Service) ProcessMessage(message string, context models.Context) (string
 	prompt := s.createSmartHomePrompt(message, context)
 
 	// Generate response using Ollama
-	response, err := s.generateResponse(prompt)
+	llmResponse, err := s.generateResponse(prompt)
 	if err != nil {
 		logrus.Errorf("Failed to generate response: %v", err)
 		// Fallback to rule-based parsing
-		response, actions := s.parseCommand(message, context)
-		return response, actions, nil
+		fallbackResponse, actions := s.parseCommand(message, context)
+		return fallbackResponse, actions, nil
 	}
 
 	// Parse actions from the LLM response
-	actions := s.extractActionsFromResponse(response)
+	actions := s.extractActionsFromResponse(llmResponse)
 
-	logrus.Debugf("Processed message: %s -> %s", message, response)
-	return response, actions, nil
+	logrus.Debugf("Processed message: %s -> %s", message, llmResponse)
+	return llmResponse, actions, nil
 }
 
 func (s *Service) parseCommand(message string, context models.Context) (string, []models.DeviceAction) {
@@ -280,11 +288,11 @@ func (s *Service) generateResponse(prompt string) (string, error) {
 		Prompt: prompt,
 		Stream: false,
 		Options: map[string]interface{}{
-			"num_predict":  s.config.MaxTokens,
-			"temperature":  s.config.Temperature,
-			"top_p":        s.config.TopP,
-			"top_k":        float64(s.config.TopK),
-			"stop":         []string{"</response>", "Human:", "User:"},
+			"num_predict": s.config.MaxTokens,
+			"temperature": s.config.Temperature,
+			"top_p":       s.config.TopP,
+			"top_k":       float64(s.config.TopK),
+			"stop":        []string{"</response>", "Human:", "User:"},
 		},
 	}
 
@@ -304,7 +312,11 @@ func (s *Service) generateResponse(prompt string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to call Ollama: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			logrus.Warnf("Failed to close response body: %v", closeErr)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)

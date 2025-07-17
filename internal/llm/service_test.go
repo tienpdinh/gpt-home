@@ -183,7 +183,7 @@ func TestProcessMessage_FallbackToRuleBased(t *testing.T) {
 	defer server.Close()
 
 	service := NewService(server.URL, "llama3.2")
-	
+
 	// First, simulate successful connection for LoadModel
 	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -194,7 +194,7 @@ func TestProcessMessage_FallbackToRuleBased(t *testing.T) {
 		}
 	}))
 	defer testServer.Close()
-	
+
 	service.ollamaURL = testServer.URL
 	err := service.LoadModel()
 	require.NoError(t, err)
@@ -239,7 +239,7 @@ func TestExtractActionsFromResponse(t *testing.T) {
 			expectAction:   true,
 		},
 		{
-			name:           "dim response", 
+			name:           "dim response",
 			response:       "I'll dim the lights to a comfortable level.",
 			expectedAction: "set_brightness",
 			expectAction:   true,
@@ -347,7 +347,7 @@ func TestConcurrentProcessing(t *testing.T) {
 	done := make(chan bool, 5)
 	messages := []string{
 		"turn on the lights",
-		"turn off the lights", 
+		"turn off the lights",
 		"dim the lights",
 		"set temperature to 22",
 		"what's the status?",
