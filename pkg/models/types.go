@@ -122,13 +122,13 @@ type ServiceStatus struct {
 	Message     string    `json:"message,omitempty"`
 }
 
-// LLMConfig represents LLM configuration
+// LLMConfig represents LLM configuration for Ollama
 type LLMConfig struct {
-	ModelPath     string  `json:"model_path"`
-	ModelType     string  `json:"model_type"`
-	MaxTokens     int     `json:"max_tokens"`
-	Temperature   float32 `json:"temperature"`
-	TopP          float32 `json:"top_p"`
-	TopK          int     `json:"top_k"`
-	ContextLength int     `json:"context_length"`
+	OllamaURL   string  `json:"ollama_url"`
+	Model       string  `json:"model"`
+	MaxTokens   int     `json:"max_tokens"`
+	Temperature float32 `json:"temperature"`
+	TopP        float32 `json:"top_p"`
+	TopK        int     `json:"top_k"`
+	Timeout     int     `json:"timeout"`
 }

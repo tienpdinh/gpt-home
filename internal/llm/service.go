@@ -1,21 +1,54 @@
 package llm
 
 import (
+	"bytes"
+	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/tienpdinh/gpt-home/internal/config"
 	"github.com/tienpdinh/gpt-home/pkg/models"
 
 	"github.com/sirupsen/logrus"
 )
 
 type Service struct {
-	modelPath string
-	modelType string
-	isLoaded  bool
-	mutex     sync.RWMutex
-	modelInfo ModelInfo
+	ollamaURL   string
+	modelName   string
+	isConnected bool
+	mutex       sync.RWMutex
+	modelInfo   ModelInfo
+	httpClient  *http.Client
+	config      OllamaConfig
+}
+
+type OllamaConfig struct {
+	URL         string
+	Model       string
+	MaxTokens   int
+	Temperature float32
+	TopP        float32
+	TopK        int
+	Timeout     time.Duration
+}
+
+// Ollama API request/response structures
+type OllamaGenerateRequest struct {
+	Model   string                 `json:"model"`
+	Prompt  string                 `json:"prompt"`
+	Stream  bool                   `json:"stream"`
+	Options map[string]interface{} `json:"options,omitempty"`
+}
+
+type OllamaGenerateResponse struct {
+	Response string `json:"response"`
+	Done     bool   `json:"done"`
+	Error    string `json:"error,omitempty"`
 }
 
 type ModelInfo struct {
@@ -25,16 +58,54 @@ type ModelInfo struct {
 	Loaded  bool   `json:"loaded"`
 }
 
-func NewService(modelPath, modelType string) *Service {
+func NewService(ollamaURL, modelName string) *Service {
 	return &Service{
-		modelPath: modelPath,
-		modelType: modelType,
-		isLoaded:  false,
+		ollamaURL:   ollamaURL,
+		modelName:   modelName,
+		isConnected: false,
 		modelInfo: ModelInfo{
-			Name:    fmt.Sprintf("%s-chat", modelType),
-			Type:    modelType,
-			Version: "1.0.0",
+			Name:    fmt.Sprintf("%s-chat", modelName),
+			Type:    modelName,
+			Version: "ollama",
 			Loaded:  false,
+		},
+		httpClient: &http.Client{
+			Timeout: 30 * time.Second,
+		},
+		config: OllamaConfig{
+			URL:         ollamaURL,
+			Model:       modelName,
+			MaxTokens:   512,
+			Temperature: 0.7,
+			TopP:        0.9,
+			TopK:        40,
+			Timeout:     30 * time.Second,
+		},
+	}
+}
+
+func NewServiceWithConfig(ollamaURL, modelName string, cfg config.LLMConfig) *Service {
+	return &Service{
+		ollamaURL:   ollamaURL,
+		modelName:   modelName,
+		isConnected: false,
+		modelInfo: ModelInfo{
+			Name:    fmt.Sprintf("%s-chat", modelName),
+			Type:    modelName,
+			Version: "ollama",
+			Loaded:  false,
+		},
+		httpClient: &http.Client{
+			Timeout: time.Duration(cfg.Timeout) * time.Second,
+		},
+		config: OllamaConfig{
+			URL:         ollamaURL,
+			Model:       modelName,
+			MaxTokens:   cfg.MaxTokens,
+			Temperature: cfg.Temperature,
+			TopP:        cfg.TopP,
+			TopK:        cfg.TopK,
+			Timeout:     time.Duration(cfg.Timeout) * time.Second,
 		},
 	}
 }
@@ -43,24 +114,79 @@ func (s *Service) LoadModel() error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	// For now, simulate model loading
-	// In a real implementation, this would load the actual model
-	logrus.Infof("Loading model from: %s", s.modelPath)
+	logrus.Infof("Connecting to Ollama at: %s", s.ollamaURL)
 
-	// Simulate loading time
-	// time.Sleep(2 * time.Second)
+	// Test connection to Ollama
+	if err := s.testConnection(); err != nil {
+		return fmt.Errorf("failed to connect to Ollama: %w", err)
+	}
 
-	s.isLoaded = true
+	// Check if model is available
+	if err := s.checkModel(); err != nil {
+		return fmt.Errorf("model %s not available: %w", s.modelName, err)
+	}
+
+	s.isConnected = true
 	s.modelInfo.Loaded = true
 
-	logrus.Infof("Model %s loaded successfully", s.modelType)
+	logrus.Infof("Connected to Ollama with model %s", s.modelName)
+	return nil
+}
+
+func (s *Service) testConnection() error {
+	resp, err := s.httpClient.Get(s.ollamaURL + "/api/tags")
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			logrus.Warnf("Failed to close response body: %v", closeErr)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("ollama server returned status %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
+func (s *Service) checkModel() error {
+	// Try to generate a simple test prompt to verify model availability
+	testReq := OllamaGenerateRequest{
+		Model:   s.modelName,
+		Prompt:  "Hello",
+		Stream:  false,
+		Options: map[string]interface{}{"num_predict": 1},
+	}
+
+	reqBody, err := json.Marshal(testReq)
+	if err != nil {
+		return err
+	}
+
+	resp, err := s.httpClient.Post(s.ollamaURL+"/api/generate", "application/json", bytes.NewBuffer(reqBody))
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			logrus.Warnf("Failed to close response body: %v", closeErr)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("model test failed: %s", string(body))
+	}
+
 	return nil
 }
 
 func (s *Service) IsLoaded() bool {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
-	return s.isLoaded
+	return s.isConnected
 }
 
 func (s *Service) GetModelInfo() ModelInfo {
@@ -73,16 +199,27 @@ func (s *Service) ProcessMessage(message string, context models.Context) (string
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
-	if !s.isLoaded {
-		return "", nil, fmt.Errorf("model not loaded")
+	if !s.isConnected {
+		return "", nil, fmt.Errorf("not connected to Ollama")
 	}
 
-	// For now, implement a simple rule-based system
-	// In a real implementation, this would use the actual LLM
-	response, actions := s.parseCommand(message, context)
+	// Create a smart home assistant prompt
+	prompt := s.createSmartHomePrompt(message, context)
 
-	logrus.Debugf("Processed message: %s -> %s", message, response)
-	return response, actions, nil
+	// Generate response using Ollama
+	llmResponse, err := s.generateResponse(prompt)
+	if err != nil {
+		logrus.Errorf("Failed to generate response: %v", err)
+		// Fallback to rule-based parsing
+		fallbackResponse, actions := s.parseCommand(message, context)
+		return fallbackResponse, actions, nil
+	}
+
+	// Parse actions from the LLM response
+	actions := s.extractActionsFromResponse(llmResponse)
+
+	logrus.Debugf("Processed message: %s -> %s", message, llmResponse)
+	return llmResponse, actions, nil
 }
 
 func (s *Service) parseCommand(message string, context models.Context) (string, []models.DeviceAction) {
@@ -141,13 +278,121 @@ func (s *Service) parseCommand(message string, context models.Context) (string, 
 	return "I understand you want to control your smart home, but I'm not sure exactly what you'd like me to do. Could you be more specific?", actions
 }
 
+func (s *Service) generateResponse(prompt string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), s.config.Timeout)
+	defer cancel()
+
+	// Prepare Ollama request
+	req := OllamaGenerateRequest{
+		Model:  s.config.Model,
+		Prompt: prompt,
+		Stream: false,
+		Options: map[string]interface{}{
+			"num_predict": s.config.MaxTokens,
+			"temperature": s.config.Temperature,
+			"top_p":       s.config.TopP,
+			"top_k":       float64(s.config.TopK),
+			"stop":        []string{"</response>", "Human:", "User:"},
+		},
+	}
+
+	reqBody, err := json.Marshal(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	// Make HTTP request to Ollama
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", s.ollamaURL+"/api/generate", bytes.NewBuffer(reqBody))
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := s.httpClient.Do(httpReq)
+	if err != nil {
+		return "", fmt.Errorf("failed to call Ollama: %w", err)
+	}
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			logrus.Warnf("Failed to close response body: %v", closeErr)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("Ollama returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	// Parse response
+	var ollamaResp OllamaGenerateResponse
+	if err := json.NewDecoder(resp.Body).Decode(&ollamaResp); err != nil {
+		return "", fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	if ollamaResp.Error != "" {
+		return "", fmt.Errorf("Ollama error: %s", ollamaResp.Error)
+	}
+
+	return strings.TrimSpace(ollamaResp.Response), nil
+}
+
+func (s *Service) createSmartHomePrompt(message string, context models.Context) string {
+	deviceContext := ""
+	if len(context.ReferencedDevices) > 0 {
+		deviceContext = fmt.Sprintf("\nPreviously referenced devices: %s", strings.Join(context.ReferencedDevices, ", "))
+	}
+
+	return fmt.Sprintf(`You are a helpful smart home assistant. You can control lights, switches, climate, and other devices.
+
+Available actions:
+- turn_on/turn_off: For lights and switches
+- set_brightness: For lights (0-255)
+- set_temperature: For climate (degrees)
+
+Respond naturally and briefly. If you perform an action, mention it.%s
+
+Human: %s
+Assistant:`, deviceContext, message)
+}
+
+func (s *Service) extractActionsFromResponse(response string) []models.DeviceAction {
+	// Simple extraction - in a production system, you'd use more sophisticated parsing
+	actions := []models.DeviceAction{}
+	response = strings.ToLower(response)
+
+	if strings.Contains(response, "turn on") || strings.Contains(response, "turning on") {
+		actions = append(actions, models.DeviceAction{
+			Action:     "turn_on",
+			Parameters: map[string]any{},
+		})
+	}
+
+	if strings.Contains(response, "turn off") || strings.Contains(response, "turning off") {
+		actions = append(actions, models.DeviceAction{
+			Action:     "turn_off",
+			Parameters: map[string]any{},
+		})
+	}
+
+	if strings.Contains(response, "dim") || strings.Contains(response, "dimming") {
+		actions = append(actions, models.DeviceAction{
+			Action: "set_brightness",
+			Parameters: map[string]any{
+				"brightness": 128,
+			},
+		})
+	}
+
+	return actions
+}
+
 func (s *Service) UnloadModel() error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	s.isLoaded = false
+	s.isConnected = false
 	s.modelInfo.Loaded = false
 
-	logrus.Info("Model unloaded")
+	logrus.Info("Disconnected from Ollama")
 	return nil
 }

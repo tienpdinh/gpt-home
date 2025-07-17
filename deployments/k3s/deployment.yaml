@@ -5,7 +5,7 @@ metadata:
   labels:
     app: gpt-home
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: gpt-home
@@ -39,24 +39,28 @@ spec:
             secretKeyRef:
               name: gpt-home-secrets
               key: ha-token
-        - name: LLM_MODEL_PATH
-          value: "/models/tinyllama-1.1b-chat-q4_0.bin"
-        - name: LLM_MODEL_TYPE
-          value: "tinyllama"
+        - name: OLLAMA_URL
+          valueFrom:
+            configMapKeyRef:
+              name: gpt-home-config
+              key: ollama-url
+        - name: OLLAMA_MODEL
+          valueFrom:
+            configMapKeyRef:
+              name: gpt-home-config
+              key: ollama-model
         - name: STORAGE_TYPE
           value: "memory"
         - name: STORAGE_IN_MEMORY
           value: "true"
         resources:
           requests:
-            memory: "1Gi"
-            cpu: "500m"
+            memory: "256Mi"
+            cpu: "250m"
           limits:
-            memory: "2Gi"
-            cpu: "1000m"
+            memory: "512Mi"
+            cpu: "500m"
         volumeMounts:
-        - name: model-storage
-          mountPath: /models
         - name: data-storage
           mountPath: /data
         livenessProbe:
@@ -72,9 +76,6 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 5
       volumes:
-      - name: model-storage
-        persistentVolumeClaim:
-          claimName: gpt-home-models-pvc
       - name: data-storage
         persistentVolumeClaim:
           claimName: gpt-home-data-pvc

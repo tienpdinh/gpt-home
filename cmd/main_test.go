@@ -115,7 +115,7 @@ func TestSetupRouter(t *testing.T) {
 	// Create real services with test configurations
 	haClient := &mockHomeAssistantClient{}
 	deviceManager := device.NewManager(haClient)
-	llmService := llm.NewService("/tmp/test", "test")
+	llmService := llm.NewService("http://localhost:11434", "test")
 	conversationManager := conversation.NewManager()
 
 	router := setupTestRouter(cfg, deviceManager, llmService, conversationManager)
@@ -157,7 +157,7 @@ func TestSetupRouter_ReleaseMode(t *testing.T) {
 
 	haClient := &mockHomeAssistantClient{}
 	deviceManager := device.NewManager(haClient)
-	llmService := llm.NewService("/tmp/test", "test")
+	llmService := llm.NewService("http://localhost:11434", "test")
 	conversationManager := conversation.NewManager()
 
 	router := setupTestRouter(cfg, deviceManager, llmService, conversationManager)
@@ -175,7 +175,7 @@ func TestSetupRouter_APIRoutes(t *testing.T) {
 
 	haClient := &mockHomeAssistantClient{}
 	deviceManager := device.NewManager(haClient)
-	llmService := llm.NewService("/tmp/test", "test")
+	llmService := llm.NewService("http://localhost:11434", "test")
 	conversationManager := conversation.NewManager()
 
 	router := setupTestRouter(cfg, deviceManager, llmService, conversationManager)
@@ -221,7 +221,7 @@ func TestSetupRouter_StaticFiles(t *testing.T) {
 
 	haClient := &mockHomeAssistantClient{}
 	deviceManager := device.NewManager(haClient)
-	llmService := llm.NewService("/tmp/test", "test")
+	llmService := llm.NewService("http://localhost:11434", "test")
 	conversationManager := conversation.NewManager()
 
 	router := setupTestRouter(cfg, deviceManager, llmService, conversationManager)
@@ -245,7 +245,7 @@ func TestSetupRouter_HomeRoute(t *testing.T) {
 
 	haClient := &mockHomeAssistantClient{}
 	deviceManager := device.NewManager(haClient)
-	llmService := llm.NewService("/tmp/test", "test")
+	llmService := llm.NewService("http://localhost:11434", "test")
 	conversationManager := conversation.NewManager()
 
 	router := setupTestRouter(cfg, deviceManager, llmService, conversationManager)
@@ -275,8 +275,8 @@ func TestMainComponents_Integration(t *testing.T) {
 			Token: "test-token",
 		},
 		LLM: config.LLMConfig{
-			ModelPath: "/tmp/test-model",
-			ModelType: "test",
+			OllamaURL: "http://localhost:11434",
+			Model:     "test",
 		},
 	}
 
@@ -284,7 +284,7 @@ func TestMainComponents_Integration(t *testing.T) {
 	assert.NotPanics(t, func() {
 		haClient := &mockHomeAssistantClient{}
 		deviceManager := device.NewManager(haClient)
-		llmService := llm.NewService("/tmp/test", "test")
+		llmService := llm.NewService("http://localhost:11434", "test")
 		conversationManager := conversation.NewManager()
 
 		router := setupTestRouter(cfg, deviceManager, llmService, conversationManager)
@@ -331,7 +331,7 @@ func TestSetupRouter_Middleware(t *testing.T) {
 
 	haClient := &mockHomeAssistantClient{}
 	deviceManager := device.NewManager(haClient)
-	llmService := llm.NewService("/tmp/test", "test")
+	llmService := llm.NewService("http://localhost:11434", "test")
 	conversationManager := conversation.NewManager()
 
 	router := setupTestRouter(cfg, deviceManager, llmService, conversationManager)

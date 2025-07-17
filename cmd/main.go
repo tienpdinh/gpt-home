@@ -36,7 +36,7 @@ func main() {
 	// Initialize components
 	haClient := homeassistant.NewClient(cfg.HomeAssistant.URL, cfg.HomeAssistant.Token)
 	deviceManager := device.NewManager(haClient)
-	llmService := llm.NewService(cfg.LLM.ModelPath, cfg.LLM.ModelType)
+	llmService := llm.NewServiceWithConfig(cfg.LLM.OllamaURL, cfg.LLM.Model, cfg.LLM)
 	conversationManager := conversation.NewManager()
 
 	// Initialize and load LLM

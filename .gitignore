@@ -9,6 +9,11 @@ gpt-home
 *.out
 go.work
 
+# Test coverage
+coverage.out
+coverage.html
+*.cover
+
 # Environment files
 .env
 .env.local

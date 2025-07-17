@@ -13,13 +13,13 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Build the application
+# Build the application (no CGO needed for Ollama HTTP client)
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o gpt-home ./cmd/main.go
 
 # Final stage
 FROM alpine:latest
 
-# Install ca-certificates for HTTPS requests
+# Install ca-certificates for HTTPS requests to Ollama
 RUN apk --no-cache add ca-certificates
 
 WORKDIR /root/
@@ -40,6 +40,8 @@ EXPOSE 8080
 ENV SERVER_PORT=8080
 ENV SERVER_HOST=0.0.0.0
 ENV LOG_LEVEL=info
+ENV OLLAMA_URL=http://host.docker.internal:11434
+ENV OLLAMA_MODEL=llama3.2
 
 # Run the application
 CMD ["./gpt-home"]

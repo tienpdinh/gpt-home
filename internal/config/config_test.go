@@ -27,13 +27,13 @@ func TestLoadDefaultConfig(t *testing.T) {
 	assert.Equal(t, "", config.HomeAssistant.Token)
 	assert.Equal(t, 30, config.HomeAssistant.Timeout)
 
-	assert.Equal(t, "./models/tinyllama-1.1b-chat-q4_0.bin", config.LLM.ModelPath)
-	assert.Equal(t, "tinyllama", config.LLM.ModelType)
+	assert.Equal(t, "http://localhost:11434", config.LLM.OllamaURL)
+	assert.Equal(t, "llama3.2", config.LLM.Model)
 	assert.Equal(t, 512, config.LLM.MaxTokens)
 	assert.Equal(t, float32(0.7), config.LLM.Temperature)
 	assert.Equal(t, float32(0.9), config.LLM.TopP)
 	assert.Equal(t, 40, config.LLM.TopK)
-	assert.Equal(t, 2048, config.LLM.ContextLength)
+	assert.Equal(t, 30, config.LLM.Timeout)
 
 	assert.Equal(t, "memory", config.Storage.Type)
 	assert.Equal(t, "./data", config.Storage.Path)
@@ -53,13 +53,13 @@ func TestLoadConfigFromEnv(t *testing.T) {
 		"HA_URL":               "http://test-ha:8123",
 		"HA_TOKEN":             "test-token-123",
 		"HA_TIMEOUT":           "45",
-		"LLM_MODEL_PATH":       "/custom/model/path.bin",
-		"LLM_MODEL_TYPE":       "phi2",
+		"OLLAMA_URL":           "http://test-server:11434",
+		"OLLAMA_MODEL":         "qwen2.5",
 		"LLM_MAX_TOKENS":       "1024",
 		"LLM_TEMPERATURE":      "0.5",
 		"LLM_TOP_P":            "0.8",
 		"LLM_TOP_K":            "50",
-		"LLM_CONTEXT_LENGTH":   "4096",
+		"LLM_TIMEOUT":          "60",
 		"STORAGE_TYPE":         "file",
 		"STORAGE_PATH":         "/custom/data",
 		"STORAGE_IN_MEMORY":    "false",
@@ -91,13 +91,13 @@ func TestLoadConfigFromEnv(t *testing.T) {
 	assert.Equal(t, "test-token-123", config.HomeAssistant.Token)
 	assert.Equal(t, 45, config.HomeAssistant.Timeout)
 
-	assert.Equal(t, "/custom/model/path.bin", config.LLM.ModelPath)
-	assert.Equal(t, "phi2", config.LLM.ModelType)
+	assert.Equal(t, "http://test-server:11434", config.LLM.OllamaURL)
+	assert.Equal(t, "qwen2.5", config.LLM.Model)
 	assert.Equal(t, 1024, config.LLM.MaxTokens)
 	assert.Equal(t, float32(0.5), config.LLM.Temperature)
 	assert.Equal(t, float32(0.8), config.LLM.TopP)
 	assert.Equal(t, 50, config.LLM.TopK)
-	assert.Equal(t, 4096, config.LLM.ContextLength)
+	assert.Equal(t, 60, config.LLM.Timeout)
 
 	assert.Equal(t, "file", config.Storage.Type)
 	assert.Equal(t, "/custom/data", config.Storage.Path)
