@@ -389,7 +389,7 @@ func TestNewServiceWithConfig(t *testing.T) {
 	assert.Equal(t, "test-model", service.modelInfo.Type)
 	assert.Equal(t, "ollama", service.modelInfo.Version)
 	assert.False(t, service.isConnected)
-	
+
 	// Check config values
 	assert.Equal(t, 1024, service.config.MaxTokens)
 	assert.Equal(t, float32(0.5), service.config.Temperature)
@@ -481,7 +481,7 @@ func TestParseCommand_AllScenarios(t *testing.T) {
 			if tt.hasAction {
 				assert.Len(t, actions, 1)
 				assert.Equal(t, tt.expectedAction, actions[0].Action)
-				
+
 				// Test specific parameter values
 				if tt.expectedAction == "set_brightness" {
 					assert.Equal(t, 128, actions[0].Parameters["brightness"])
