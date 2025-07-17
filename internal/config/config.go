@@ -31,13 +31,13 @@ type HomeAssistantConfig struct {
 }
 
 type LLMConfig struct {
-	ModelPath     string  `json:"model_path"`
-	ModelType     string  `json:"model_type"`
-	MaxTokens     int     `json:"max_tokens"`
-	Temperature   float32 `json:"temperature"`
-	TopP          float32 `json:"top_p"`
-	TopK          int     `json:"top_k"`
-	ContextLength int     `json:"context_length"`
+	OllamaURL   string  `json:"ollama_url"`
+	Model       string  `json:"model"`
+	MaxTokens   int     `json:"max_tokens"`
+	Temperature float32 `json:"temperature"`
+	TopP        float32 `json:"top_p"`
+	TopK        int     `json:"top_k"`
+	Timeout     int     `json:"timeout"`
 }
 
 type StorageConfig struct {
@@ -64,13 +64,13 @@ func Load() (*Config, error) {
 			Timeout: getEnvAsInt("HA_TIMEOUT", 30),
 		},
 		LLM: LLMConfig{
-			ModelPath:     getEnv("LLM_MODEL_PATH", "./models/tinyllama-1.1b-chat-q4_0.bin"),
-			ModelType:     getEnv("LLM_MODEL_TYPE", "tinyllama"),
-			MaxTokens:     getEnvAsInt("LLM_MAX_TOKENS", 512),
-			Temperature:   getEnvAsFloat32("LLM_TEMPERATURE", 0.7),
-			TopP:          getEnvAsFloat32("LLM_TOP_P", 0.9),
-			TopK:          getEnvAsInt("LLM_TOP_K", 40),
-			ContextLength: getEnvAsInt("LLM_CONTEXT_LENGTH", 2048),
+			OllamaURL:   getEnv("OLLAMA_URL", "http://localhost:11434"),
+			Model:       getEnv("OLLAMA_MODEL", "llama3.2"),
+			MaxTokens:   getEnvAsInt("LLM_MAX_TOKENS", 512),
+			Temperature: getEnvAsFloat32("LLM_TEMPERATURE", 0.7),
+			TopP:        getEnvAsFloat32("LLM_TOP_P", 0.9),
+			TopK:        getEnvAsInt("LLM_TOP_K", 40),
+			Timeout:     getEnvAsInt("LLM_TIMEOUT", 30),
 		},
 		Storage: StorageConfig{
 			Type:     getEnv("STORAGE_TYPE", "memory"),

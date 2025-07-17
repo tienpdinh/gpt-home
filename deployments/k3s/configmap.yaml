@@ -4,7 +4,8 @@ metadata:
   name: gpt-home-config
 data:
   ha-url: "http://homeassistant.default.svc.cluster.local:8123"
-  llm-model-type: "tinyllama"
+  ollama-url: "http://10.97.1.165:11434"
+  ollama-model: "llama3.2"
   llm-max-tokens: "512"
   llm-temperature: "0.7"
   storage-type: "memory"

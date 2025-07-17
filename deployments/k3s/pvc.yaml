@@ -1,14 +1,5 @@
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: gpt-home-models-pvc
-spec:
-  accessModes:
-    - ReadOnlyMany
-  resources:
-    requests:
-      storage: 5Gi
-  storageClassName: local-path
+# Models PVC no longer needed - using Ollama on host PC
+# Removed gpt-home-models-pvc
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
