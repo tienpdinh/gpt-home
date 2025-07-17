@@ -201,3 +201,148 @@ func TestHealthStatus(t *testing.T) {
 	assert.Equal(t, "healthy", health.Services.HomeAssistant.Status)
 	assert.Equal(t, "healthy", health.Services.Database.Status)
 }
+
+func TestDeviceValidation(t *testing.T) {
+	tests := []struct {
+		name        string
+		device      Device
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name: "valid device",
+			device: Device{
+				ID:       "light.living_room",
+				Name:     "Living Room Light",
+				EntityID: "light.living_room",
+			},
+			expectError: false,
+		},
+		{
+			name: "missing ID",
+			device: Device{
+				Name:     "Living Room Light",
+				EntityID: "light.living_room",
+			},
+			expectError: true,
+			errorMsg:    "device ID is required",
+		},
+		{
+			name: "missing name",
+			device: Device{
+				ID:       "light.living_room",
+				EntityID: "light.living_room",
+			},
+			expectError: true,
+			errorMsg:    "device name is required",
+		},
+		{
+			name: "missing entity ID",
+			device: Device{
+				ID:   "light.living_room",
+				Name: "Living Room Light",
+			},
+			expectError: true,
+			errorMsg:    "device entity ID is required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.device.Validate()
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errorMsg)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestMessageValidation(t *testing.T) {
+	tests := []struct {
+		name     string
+		message  Message
+		expected bool
+	}{
+		{
+			name: "valid message",
+			message: Message{
+				Role:    MessageRoleUser,
+				Content: "Hello world",
+			},
+			expected: true,
+		},
+		{
+			name: "empty content",
+			message: Message{
+				Role:    MessageRoleUser,
+				Content: "",
+			},
+			expected: false,
+		},
+		{
+			name: "empty role",
+			message: Message{
+				Role:    "",
+				Content: "Hello world",
+			},
+			expected: false,
+		},
+		{
+			name: "both empty",
+			message: Message{
+				Role:    "",
+				Content: "",
+			},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.message.IsValid()
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestChatResponseHasActions(t *testing.T) {
+	tests := []struct {
+		name     string
+		response ChatResponse
+		expected bool
+	}{
+		{
+			name: "response with actions",
+			response: ChatResponse{
+				ActionsPerformed: []DeviceAction{
+					{Action: "turn_on"},
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "response without actions",
+			response: ChatResponse{
+				ActionsPerformed: []DeviceAction{},
+			},
+			expected: false,
+		},
+		{
+			name: "response with nil actions",
+			response: ChatResponse{
+				ActionsPerformed: nil,
+			},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.response.HasActions()
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}

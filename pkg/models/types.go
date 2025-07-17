@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -131,4 +132,28 @@ type LLMConfig struct {
 	TopP        float32 `json:"top_p"`
 	TopK        int     `json:"top_k"`
 	Timeout     int     `json:"timeout"`
+}
+
+// Validate checks if the device has required fields
+func (d *Device) Validate() error {
+	if d.ID == "" {
+		return fmt.Errorf("device ID is required")
+	}
+	if d.Name == "" {
+		return fmt.Errorf("device name is required")
+	}
+	if d.EntityID == "" {
+		return fmt.Errorf("device entity ID is required")
+	}
+	return nil
+}
+
+// IsValid checks if the message has required content
+func (m *Message) IsValid() bool {
+	return m.Content != "" && m.Role != ""
+}
+
+// HasActions checks if the chat response contains any actions
+func (r *ChatResponse) HasActions() bool {
+	return len(r.ActionsPerformed) > 0
 }
