@@ -8,9 +8,10 @@ echo "Deploying GPT-Home to K3s cluster..."
 echo "Building Docker image..."
 docker build -t gpt-home:latest .
 
-# Load image into K3s (for local development)
-echo "Loading image into K3s..."
-k3s ctr images import <(docker save gpt-home:latest)
+# Tag and push to Docker Hub
+echo "Tagging and pushing image to Docker Hub..."
+docker tag gpt-home:latest tiendinhphuc/gpt-home:latest
+docker build --platform linux/arm64 -t tiendinhphuc/gpt-home:arm64 . --push
 
 # Apply Kubernetes manifests
 echo "Applying Kubernetes manifests..."
@@ -33,8 +34,8 @@ echo "Service endpoints:"
 kubectl get svc -n gpt-home
 echo ""
 echo "To access GPT-Home:"
-echo "1. Add 'gpt-home.local' to your /etc/hosts pointing to your K3s node IP"
-echo "2. Visit http://gpt-home.local in your browser"
+echo "1. Ensure DNS record for gpt-home.tdinternal.com points to your K3s node"
+echo "2. Visit http://gpt-home.tdinternal.com in your browser"
 echo ""
 echo "To check logs:"
 echo "kubectl logs -f deployment/gpt-home -n gpt-home"

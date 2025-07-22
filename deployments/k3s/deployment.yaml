@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: gpt-home
-        image: gpt-home:latest
+        image: tiendinhphuc/gpt-home:arm64
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
@@ -104,7 +104,7 @@ metadata:
     traefik.ingress.kubernetes.io/router.entrypoints: web
 spec:
   rules:
-  - host: gpt-home.local
+  - host: gpt-home.tdinternal.com
     http:
       paths:
       - path: /

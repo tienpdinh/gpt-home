@@ -50,30 +50,36 @@ The system consists of four primary components:
 
 2. **Install and configure Ollama on your PC**
    ```bash
-   # Install Ollama
-   curl -fsSL https://ollama.ai/install.sh | sh
+   # Option A: Docker Desktop (Recommended)
+   docker run -d --name ollama -p 11434:11434 -v ollama:/root/.ollama ollama/ollama
+   docker exec ollama ollama pull llama3.2
    
-   # Configure for network access
+   # Option B: Native Installation
+   curl -fsSL https://ollama.ai/install.sh | sh
    export OLLAMA_HOST=0.0.0.0:11434
    ollama serve
-   
-   # Pull a model (in another terminal)
    ollama pull llama3.2
    ```
 
 3. **Configure and deploy to K3s**
    ```bash
    # Update deployments/k3s/configmap.yaml with your details:
-   # - Replace YOUR_PC_IP with your PC's IP address
-   # - Set ollama-model to your preferred model
-   # - Configure HA URL and token
+   # - Set ollama-url to your PC's IP (e.g., http://10.97.1.165:11434)
+   # - Set ha-url to your Home Assistant IP (e.g., http://10.97.2.114:8123)
+   # - Configure ollama-model to your preferred model
    
-   kubectl apply -f deployments/k3s/
+   # Create Home Assistant token secret
+   kubectl create secret generic gpt-home-secrets \
+     --from-literal=ha-token="your-long-lived-access-token" \
+     -n gpt-home
+   
+   # Deploy using the automated script
+   ./scripts/deploy.sh
    ```
 
 4. **Access the interface**
-   - Add `gpt-home.local` to your `/etc/hosts` pointing to your K3s node IP
-   - Visit `http://gpt-home.local`
+   - Ensure DNS record for `gpt-home.tdinternal.com` points to your K3s node IP
+   - Visit `http://gpt-home.tdinternal.com`
 
 ## 🔧 Configuration
 
@@ -153,21 +159,41 @@ curl -X GET "http://localhost:8080/api/v1/health"
 
 ## 🐳 Deployment
 
-### Docker Build
+### Automated Deployment
 
 ```bash
+# Ensure you're logged into Docker Hub
+docker login
+
+# Run the automated deployment script
+./scripts/deploy.sh
+```
+
+This script will:
+- Build the Docker image locally
+- Build and push ARM64 version to Docker Hub
+- Deploy to your k3s cluster
+- Set up all required Kubernetes resources
+
+### Manual Docker Build
+
+```bash
+# Build for local use
 docker build -t gpt-home:latest .
+
+# Build and push ARM64 for k3s cluster
+docker build --platform linux/arm64 -t tiendinhphuc/gpt-home:arm64 . --push
 ```
 
 ### Kubernetes Deployment
 
 The deployment includes:
-- **Deployment**: Main application pods with resource limits
+- **Deployment**: Main application pods with resource limits (ARM64 optimized)
 - **Service**: ClusterIP service for internal communication
-- **Ingress**: Traefik ingress for external access
-- **ConfigMap**: Non-sensitive configuration
-- **Secret**: HomeAssistant token
-- **PVC**: Persistent storage for data (models run via Ollama on PC)
+- **Ingress**: Traefik ingress for HTTP access (port 80)
+- **ConfigMap**: Non-sensitive configuration (Ollama URL, HA URL, model settings)
+- **Secret**: HomeAssistant long-lived access token
+- **PVC**: Persistent storage for application data
 
 ## 📊 Resource Requirements
 
