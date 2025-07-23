@@ -17,7 +17,7 @@ spec:
       containers:
       - name: gpt-home
         image: tiendinhphuc/gpt-home:arm64
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         ports:
         - containerPort: 8080
         env:
