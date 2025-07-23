@@ -127,7 +127,7 @@ func setupRouter(cfg *config.Config, deviceManager *device.Manager, llmService *
 	router.LoadHTMLGlob("web/templates/*")
 	router.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", gin.H{
-			"title": "GPT-Home",
+			"title": "Luna - GPT-Home",
 		})
 	})
 

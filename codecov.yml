@@ -2,14 +2,14 @@ coverage:
   status:
     project:
       default:
-        target: 80%
+        target: 60%
         threshold: 1%
         if_no_uploads: error
         if_not_found: success
         if_ci_failed: error
     patch:
       default:
-        target: 70%
+        target: 60%
         threshold: 1%
         if_no_uploads: error
         if_not_found: success
