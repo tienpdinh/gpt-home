@@ -1,0 +1,330 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{times}
+\usepackage{setspace}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{cite}
+\usepackage{fancyhdr}
+\usepackage{indentfirst}
+\usepackage{enumitem}
+\usepackage{rotating}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{caption}
+
+\singlespacing
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\thepage}
+
+% Left-aligned section formatting: bold, same font size as text
+\usepackage{titlesec}
+\titleformat{\section}
+  {\normalfont\normalsize\bfseries}
+  {}
+  {0em}
+  {}
+\titleformat{\subsection}
+  {\normalfont\normalsize\bfseries}
+  {}
+  {0em}
+  {}
+
+\title{Luna: A ChatGPT Fork for Smart Home Control Using Natural Language}
+\author{Tien Dinh}
+\date{\today}
+
+\begin{document}
+
+% APA Title Page
+\begin{titlepage}
+\doublespacing
+\centering
+\vspace*{2in}
+
+{\Large \textbf{Luna: A ChatGPT Fork for Smart Home Control Using Natural Language}}
+
+\vspace{1in}
+
+{\large Tien Dinh}
+
+\vspace{0.5in}
+
+{\large Harrisburg University of Science and Technology}
+
+\vspace{0.5in}
+
+{\large CISC 699: Computer Science Capstone}
+
+\vspace{0.5in}
+
+{\large Professor Cha}
+
+\vspace{0.5in}
+
+{\large \today}
+
+\end{titlepage}
+
+\newpage
+
+\section{Abstract}
+
+Smart home technology has widespread adoption yet significant usability gaps persist in current control interfaces. While voice assistants offer natural language capability, they require cloud connectivity and raise privacy concerns. This project, Luna, develops a specialized ChatGPT-like system for local smart home control using lightweight language models deployed on edge hardware.
+
+\indent Luna will leverage quantized language models (TinyLlama-1.1B or Phi-2 Q4) fine-tuned for smart home commands and deployed on a 4-node Raspberry Pi 4B cluster using Kubernetes (K3s). Unlike cloud-based solutions, this system operates entirely offline, ensuring privacy while demonstrating conversational AI feasibility on resource-constrained hardware. The architecture integrates directly with HomeAssistant through REST APIs, enabling natural language control without external dependencies.
+
+\indent This edge AI approach addresses privacy concerns in smart homes while exploring optimization strategies for deploying language models on commodity hardware. The project contributes to understanding edge AI deployment trade-offs and demonstrates how domain-specific models can deliver functional conversational interfaces in resource-constrained environments.
+
+\section{Introduction}
+
+Smart home systems like HomeAssistant, SmartThings, and Apple HomeKit have gained popularity, but significant usability gaps persist (Yang et al., 2018). Current control methods require complex interfaces, specific command phrasing, or vendor-specific applications. While voice assistants like Alexa and Google Assistant offer natural language capability, they remain limited in contextual understanding, require cloud connectivity, and raise privacy concerns (Wilson et al., 2020).
+
+Luna is a specialized conversational AI system designed for intuitive, local control of smart home devices. Operating entirely on edge hardware (Raspberry Pi cluster), it eliminates privacy concerns while enabling offline operation. The system demonstrates practical application of lightweight language models in resource-constrained environments using optimization techniques like quantization (Jacob et al., 2018) and domain-specific fine-tuning.
+
+The intersection of edge AI (Shi et al., 2016) and smart home automation addresses critical concerns about data privacy, network latency, and internet dependency while maintaining sophisticated natural language understanding based on transformer architectures (Vaswani et al., 2017). This approach is particularly relevant as consumers seek alternatives to always-listening cloud-based assistants.
+
+\section{Problem Statement}
+
+Current smart home control interfaces suffer from three critical limitations that impede widespread adoption and user satisfaction. First, existing voice assistants require constant internet connectivity and transmit private home data to cloud servers, creating significant privacy vulnerabilities and rendering systems unusable during network outages. Second, these systems lack contextual understanding and conversational memory, forcing users to repeat device names and context in every interaction rather than enabling natural dialogue. Third, current interfaces require precise command phrasing and cannot handle the varied, natural language expressions that users intuitively employ when communicating about their home environment.
+
+These limitations result in user frustration, privacy concerns, and over-reliance on cloud infrastructure for basic home automation tasks. The problem is particularly acute for privacy-conscious users who desire sophisticated natural language control without compromising personal data security. Additionally, the inability to maintain conversational context prevents users from engaging in natural, multi-turn dialogues about their home environment, forcing them to adapt their communication style to rigid system constraints rather than the system adapting to natural human communication patterns.
+
+Luna addresses this problem by developing a privacy-first, conversational AI system that operates entirely on local edge hardware while providing sophisticated natural language understanding and contextual awareness for smart home control. The project scope encompasses developing, deploying, and evaluating this system on resource-constrained hardware to demonstrate that advanced conversational AI capabilities can be achieved without cloud dependencies or privacy compromises.
+
+\section{Requirements Analysis}
+
+This section establishes the technical and operational requirements for Luna. The Functional Requirements define five core capability areas: Natural Language Processing, Device Control and Integration, Conversational Context Management, User Interface, and Model Management.
+
+\subsection{Functional Requirements}
+
+The functional requirements for Luna encompass five critical capability areas that define the system's core functionality. Natural Language Processing requirements ensure the system can accept and interpret varied English commands while handling ambiguity through clarification requests. Device Control and Integration requirements establish HomeAssistant REST API connectivity for controlling lights, switches, sensors, and climate devices, with the ability to retrieve and display current device states. Conversational Context Management requirements mandate conversation history maintenance, device reference tracking within sessions, and support for follow-up commands without repetition. User Interface requirements specify a web-based chat interface with conversation history display and real-time response generation. Model Management requirements define local quantized model deployment with support for model switching between TinyLlama and Phi-2, including fine-tuning capabilities on smart home command datasets. These functional requirements collectively enable Luna to deliver intuitive, conversational smart home control through natural language interaction.
+
+\begin{enumerate}[label=FR-\arabic*]
+\item \textbf{Natural Language Processing}
+    \begin{itemize}
+    \item The system shall accept natural language commands in English for device control
+    \item The system shall interpret varied phrasings for the same device operations
+    \item The system shall handle ambiguous commands by requesting clarification
+    \end{itemize}
+
+\item \textbf{Device Control and Integration}
+    \begin{itemize}
+    \item The system shall integrate with HomeAssistant via REST API
+    \item The system shall control lights, switches, sensors, and climate devices
+    \item The system shall retrieve and display current device states
+    \end{itemize}
+
+\item \textbf{Conversational Context Management}
+    \begin{itemize}
+    \item The system shall maintain conversation history for context awareness
+    \item The system shall remember device references within conversation sessions
+    \item The system shall support follow-up commands without repeating device names
+    \end{itemize}
+
+\item \textbf{User Interface}
+    \begin{itemize}
+    \item The system shall provide a web-based chat interface
+    \item The system shall display conversation history and device status
+    \item The system shall provide real-time response generation
+    \end{itemize}
+
+\item \textbf{Model Management}
+    \begin{itemize}
+    \item The system shall load and run quantized language models locally
+    \item The system shall support model switching between TinyLlama and Phi-2
+    \item The system shall fine-tune models on smart home command datasets
+    \end{itemize}
+\end{enumerate}
+
+\section{Software Requirements Specification (SRS)}
+
+This section provides detailed technical specifications organized into five subsections. System Overview defines Luna as a distributed conversational AI system on Kubernetes for natural language smart home control. System Architecture outlines four primary components: Natural Language Processing Engine, Device Integration Layer, Context Management System, and User Interface. Data Requirements specify local storage of conversation histories, device states, model parameters, and user preferences using Kubernetes persistent volumes. Interface Requirements detail external interfaces (HomeAssistant REST API, web browser, Kubernetes API) and internal component connections. Quality Attributes establish performance targets (sub-3-second response times, 4GB memory constraints), reliability specifications (graceful degradation, error recovery), and security mandates (local-only processing, encrypted storage).
+
+\subsection{System Overview}
+Luna is a distributed conversational AI system deployed on a Kubernetes cluster that provides natural language control for smart home devices through local language model inference and HomeAssistant integration.
+
+\subsection{System Architecture}
+The system consists of four primary components: the Natural Language Processing Engine running quantized language models, the Device Integration Layer providing HomeAssistant connectivity, the Context Management System maintaining conversation state, and the User Interface providing web-based interaction.
+
+\subsection{Data Requirements}
+The system manages conversation histories, device states, model parameters, and user preferences. All data storage occurs locally using persistent volumes in the Kubernetes cluster.
+
+\subsection{Interface Requirements}
+External interfaces include HomeAssistant REST API for device communication, web browser interface for user interaction, and Kubernetes API for system management. Internal interfaces connect the language model, context manager, and device controller components.
+
+\subsection{Quality Attributes}
+Performance targets include sub-3-second response times and efficient memory utilization within 4GB constraints. Reliability requirements specify graceful degradation and error recovery. Security mandates local-only processing and encrypted data storage.
+
+\section{UML Diagrams}
+
+This section presents comprehensive system modeling through multiple UML diagram types. Use Case Diagrams illustrate three primary scenarios: Basic Device Control (single device commands), Contextual Conversation (multi-device conversational control), and Device Status Inquiry (querying current device states). Class Diagram depicts system architecture with seven core classes: LunaController (main orchestration), LanguageModel (quantized model management), ConversationManager (dialogue state management), HomeAssistantIntegrator (API interface), DeviceManager (device state management), UserInterface (web-based interaction), and ConfigurationManager (system configuration). Sequence Diagrams demonstrate interaction flows for device control commands and status queries, showing message flow from user input through language processing, device identification, HomeAssistant integration, and response generation.
+
+\subsection{Use Case 1: Basic Device Control}
+\noindent\textbf{Actor:} Home User \\
+\textbf{Goal:} Control a smart home device using natural language \\
+\textbf{Preconditions:} User is authenticated, Luna system is running, target device is available in HomeAssistant
+
+\indent This use case represents the fundamental interaction pattern where a home user controls a single smart home device through natural language commands. The user submits a command such as "turn on the living room light" through Luna's web interface. The system processes this natural language input, identifies the target device from HomeAssistant's device registry, executes the appropriate control action via the HomeAssistant REST API, and provides confirmation feedback to the user. This straightforward workflow demonstrates Luna's core capability of translating everyday language into device control actions without requiring technical commands or device-specific syntax.
+
+\begin{centering}
+\includegraphics[width=0.85\textwidth]{Luna-Use-Case-1.png}
+\captionof{figure}{Luna Basic Device Control Use Case Diagram}\label{fig:usecase1}
+\end{centering}
+
+\subsection{Use Case 2: Contextual Conversation}
+\noindent\textbf{Actor:} Home User \\
+\textbf{Goal:} Control multiple devices through conversational context \\
+\textbf{Preconditions:} User has active conversation session, previous commands established context
+
+\indent This use case demonstrates Luna's contextual awareness capability, enabling natural multi-turn conversations about smart home devices. Unlike basic single-command interactions, this scenario allows users to reference previously mentioned devices without repeating names. For example, a user might say "turn on the bedroom light," followed by "make it dimmer" or "turn it off in 10 minutes." Luna maintains conversation history and device references throughout the session, understanding that "it" refers to the bedroom light from the earlier command. This contextual memory enables more natural dialogue patterns where users can issue follow-up commands, make adjustments, or control multiple related devices through conversational flow rather than isolated commands.
+
+\begin{centering}
+\includegraphics[width=0.85\textwidth]{Luna-Use-Case-2.png}
+\captionof{figure}{Luna Contextual Conversation Use Case Diagram}\label{fig:usecase2}
+\end{centering}
+
+\subsection{Use Case 3: Device Status Inquiry}
+\noindent\textbf{Actor:} Home User \\
+\textbf{Goal:} Query current status of smart home devices \\
+\textbf{Preconditions:} Luna system is running, HomeAssistant has current device data
+
+\indent This use case focuses on information retrieval rather than device control, allowing users to query the current state of their smart home devices through natural language questions. Users can ask questions like "is the front door locked?" or "what's the temperature in the living room?" or "are any lights on upstairs?" Luna processes these queries, retrieves current device states from HomeAssistant, and presents the information in conversational, human-readable format. This capability provides situational awareness and enables users to check device status before issuing control commands or simply to monitor their home environment without navigating through multiple device interfaces or applications.
+
+\begin{centering}
+\includegraphics[width=0.85\textwidth]{Luna-Use-Case-3.png}
+\captionof{figure}{Luna Device Status Inquiry Use Case Diagram}\label{fig:usecase3}
+\end{centering}
+
+\subsection{Class Diagram}
+
+\begin{centering}
+\includegraphics[width=\textwidth]{class-diagram.png}
+\captionof{figure}{Luna Class Diagram}\label{fig:class}
+\end{centering}
+
+The class diagram shows the main system components and their relationships:
+
+\textbf{LunaController:} Main orchestration class managing user requests and coordinating between components.
+
+\textbf{LanguageModel:} Handles loading, running, and managing the quantized language models (TinyLlama or Phi-2).
+
+\textbf{ConversationManager:} Maintains conversation context, history, and manages multi-turn dialogue state.
+
+\textbf{HomeAssistantIntegrator:} Interfaces with HomeAssistant REST API for device control and status queries.
+
+\textbf{DeviceManager:} Manages device state, handles device discovery, and maintains device registry.
+
+\textbf{UserInterface:} Web-based interface handling user input and displaying responses.
+
+\textbf{ConfigurationManager:} Manages system configuration, model parameters, and deployment settings.
+
+\subsection{Sequence Diagrams}
+
+The sequence diagrams illustrate the step-by-step message flow between Luna's system components during user interactions. These diagrams capture the temporal ordering of operations and the communication patterns that enable natural language processing and smart home control.
+
+\begin{centering}
+\includegraphics[width=\textwidth]{sequence-device-control.png}
+\captionof{figure}{Device Control Sequence Diagram}\label{fig:seq-control}
+\end{centering}
+
+\textbf{Device Control Sequence:} This diagram shows the complete interaction flow when a user issues a device control command. The sequence begins when the user submits a natural language command through the UserInterface component. The LunaController receives this input and forwards it to the LanguageModel for natural language processing and intent extraction. Once the intent is determined, the ConversationManager updates the conversation history to maintain context. The LunaController then queries the DeviceManager to identify the target device from the command. With the device identified, the HomeAssistantIntegrator executes the control action via the HomeAssistant REST API and receives confirmation. Finally, the LanguageModel generates a natural language response, which flows back through the LunaController to the UserInterface, providing the user with conversational feedback confirming the action.
+
+\begin{centering}
+\includegraphics[width=\textwidth]{sequence-status-query.png}
+\captionof{figure}{Status Query Sequence Diagram}\label{fig:seq-status}
+\end{centering}
+
+\textbf{Status Query Sequence:} This diagram demonstrates the process for handling device status inquiries. The flow begins similarly with user input through the UserInterface to the LunaController. The LanguageModel processes the query to extract the information request. The ConversationManager retrieves relevant context from previous conversation history to resolve any ambiguous device references. The DeviceManager queries the HomeAssistantIntegrator to retrieve current device states via the REST API. The retrieved status information is then formatted by the LanguageModel into natural, conversational language and returned to the user through the interface. This sequence emphasizes read-only operations and context resolution without executing control actions.
+
+\section{Project Objectives}
+
+This section outlines five strategic goals for Luna development. The objectives focus on: developing fine-tuned lightweight LLMs (TinyLlama-1.1B or quantized Phi-2) optimized for smart home control within edge hardware constraints; creating streamlined integration connecting language models directly with HomeAssistant APIs without intermediate messaging layers; implementing context awareness and conversation management in memory-constrained environments; designing and deploying a secure local system on a Raspberry Pi K3s cluster that eliminates cloud dependencies; and evaluating performance and resource utilization while comparing edge versus cloud deployment trade-offs. These objectives emphasize the project's commitment to edge computing, privacy-first design, and demonstrating practical AI deployment on resource-constrained hardware.
+
+\begin{enumerate}
+\item Develop a fine-tuned lightweight LLM (TinyLlama-1.1B or quantized Phi-2) optimized for smart home control within edge hardware constraints
+\item Create streamlined integration connecting the language model directly with HomeAssistant APIs without intermediate messaging layers
+\item Implement context awareness and conversation management in memory-constrained environments
+\item Design and deploy a secure local system on a Raspberry Pi K3s cluster eliminating cloud dependencies
+\item Evaluate performance and resource utilization, comparing edge versus cloud deployment trade-offs
+\end{enumerate}
+
+\section{Technical Approach}
+
+This section details the implementation strategy through five technical subsections. Technology Stack specifies Python for backend development, Hugging Face Transformers for model management, HomeAssistant REST API for device communication, and Docker with K3s for Raspberry Pi cluster orchestration. Model Selection and Deployment addresses 4GB memory constraints by using quantized models: TinyLlama-1.1B-Chat or Phi-2 with Q4 quantization (reducing from 6GB to 1.6GB) while maintaining smart home command fine-tuning capability. Infrastructure Design describes deployment on a 4-node Raspberry Pi 4B cluster using K3s (512MB RAM per node overhead, $\sim$3GB available for applications) with one master node and three worker nodes. Backend and Integration outlines FastAPI for robust API endpoints and direct HomeAssistant integration via REST API and WebSocket connections. Context Management and Optimization implements conversation history and device state tracking using efficient data structures, model quantization, intelligent caching, and memory management for optimal 4GB node performance.
+
+\subsection{Technology Stack}
+The project uses Python for backend development, Hugging Face Transformers for model management, Home Assistant REST API for device communication, and Docker with K3s for container orchestration across a Raspberry Pi cluster.
+
+\indent Backend development refers to the server-side components that power Luna's core functionality, handling the computational logic that processes user requests, manages data, and coordinates between different system components. Python serves as the primary backend language due to its extensive ecosystem for machine learning and natural language processing, mature libraries for API development, and strong community support for edge computing applications. The backend encompasses the web server that receives user commands, the business logic that processes natural language through the language model, the data management layer that maintains conversation context and device states, and the integration layer that communicates with HomeAssistant. This backend infrastructure runs continuously on the Raspberry Pi cluster, processing incoming requests, executing language model inference, managing device control operations, and returning responses to users through the web interface.
+
+\subsection{Model Selection and Deployment}
+Given 4GB Raspberry Pi 4B memory constraints, we will use quantized language models: TinyLlama-1.1B-Chat (Zhang et al., 2023) or Phi-2 with Q4 quantization (Gunasekar et al., 2023) (reducing from 6GB to 1.6GB). These pre-trained models maintain the compact footprint necessary for local deployment on resource-constrained hardware.
+
+\subsection{Backend and Integration}
+FastAPI backend provides robust API endpoints for model inference and device communication. Direct Home Assistant integration through REST API and WebSocket connections leverages HA's device abstraction layer, eliminating intermediate messaging protocols and reducing complexity.
+
+\subsection{Context Management and Optimization}
+The system implements conversation history and device state tracking within memory constraints. Context awareness uses efficient data structures for recent interactions and device states. Optimization techniques include model quantization, efficient memory management, and intelligent caching for responsive performance on 4GB nodes.
+
+\section{Motivation and Feasibility}
+
+The motivation for Luna stems from the growing tension between smart home adoption and privacy concerns. Current cloud-based voice assistants require constant internet connectivity and external data transmission, creating vulnerabilities that many users find unacceptable. Simultaneously, advances in language model quantization and edge computing infrastructure have made local AI deployment increasingly viable. Luna addresses this gap by demonstrating that sophisticated conversational AI can operate entirely on local hardware without compromising user privacy or requiring cloud dependencies.
+
+The project scope is achievable within the timeframe using:
+\begin{itemize}
+\item Existing lightweight, open-source LLMs with proven performance on constrained hardware
+\item Established HomeAssistant environment for immediate testing and validation
+\item Well-defined smart home functionality subset optimized for edge deployment
+\item Iterative development with clear milestones accounting for 4GB Pi limitations
+\end{itemize}
+
+Hardware constraints enhance academic value by demonstrating real-world edge deployment challenges. The modular system design allows incremental progress with measurable performance metrics, enabling systematic evaluation of trade-offs between model size, response time, and accuracy in resource-constrained environments.
+
+\section{Expected Outcomes}
+
+Luna will demonstrate:
+\begin{itemize}
+\item Effective natural language understanding for smart home control on edge hardware
+\item Functional contextual awareness despite memory limitations
+\item Privacy-first architecture operating entirely offline
+\item Scalable edge AI framework with performance benchmarks comparing edge versus cloud deployment
+\end{itemize}
+
+This contributes to edge computing, applied NLP, and smart home technology by showing how optimized language models deliver practical functionality on resource-constrained hardware while addressing privacy, latency, and connectivity concerns.
+
+\section{Conclusion}
+
+Luna represents a novel approach to smart home usability and privacy challenges through edge-deployed conversational AI. By demonstrating successful deployment of optimized language models on resource-constrained hardware, this project contributes practical knowledge to edge AI applications and validates the feasibility of local conversational AI deployment for smart home automation.
+
+\pagebreak
+
+\section{References}
+
+\begin{list}{}{\leftmargin=0.5in \itemindent=-0.5in}
+
+\item Gunasekar, S., Zhang, Y., Aneja, J., Mendes, C. C. T., Del Giorno, A., Gopi, S., Hosseini, M., Klimek, P., Klos, A., Lee, E., \& others. (2023). Textbooks are all you need. \textit{arXiv preprint arXiv:2306.11644}.
+
+\item Jacob, B., Kligys, S., Chen, B., Zhu, M., Tang, M., Howard, A., Adam, H., \& Kalenichenko, D. (2018). Quantization and training of neural networks for efficient integer-arithmetic-only inference. \textit{Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition}, 2704-2713.
+
+\item Rancher Labs. (2019). K3s: Lightweight Kubernetes. Retrieved from https://k3s.io/
+
+\item Shi, W., Cao, J., Zhang, Q., Li, Y., \& Xu, L. (2016). Edge computing: Vision and challenges. \textit{IEEE Internet of Things Journal}, 3(5), 637-646.
+
+\item Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., Kaiser, L., \& Polosukhin, I. (2017). Attention is all you need. \textit{Advances in Neural Information Processing Systems}, 30.
+
+\item Wilson, C., Hargreaves, T., \& Hauxwell-Baldwin, R. (2020). Benefits and risks of smart home technologies. \textit{Energy Policy}, 103, 72-83.
+
+\item Yang, H., Lee, W., \& Lee, H. (2018). IoT smart home adoption: The importance of proper level automation. \textit{Journal of Sensors}, 2018.
+
+\item Zhang, P., Zeng, G., Wang, T., \& Lu, W. (2023). TinyLlama: An open-source small language model. \textit{arXiv preprint arXiv:2401.02385}.
+
+\end{list}
+
+\end{document}
