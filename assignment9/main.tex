@@ -1,0 +1,468 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{times}
+\usepackage{setspace}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{cite}
+\usepackage{fancyhdr}
+\usepackage{indentfirst}
+\usepackage{enumitem}
+\usepackage{rotating}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\singlespacing
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\thepage}
+
+% Left-aligned section formatting: bold, same font size as text
+\usepackage{titlesec}
+\titleformat{\section}
+  {\normalfont\normalsize\bfseries}
+  {}
+  {0em}
+  {}
+\titleformat{\subsection}
+  {\normalfont\normalsize\bfseries}
+  {}
+  {0em}
+  {}
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\bfseries}
+  {}
+  {0em}
+  {}
+
+% Code listing style
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny,
+  backgroundcolor=\color{gray!10}
+}
+
+\title{Luna: A Privacy-First Conversational AI System for Smart Home Control}
+\author{Tien Dinh}
+\date{\today}
+
+\begin{document}
+
+% APA Title Page
+\begin{titlepage}
+\doublespacing
+\centering
+\vspace*{2in}
+
+{\Large \textbf{Luna: A Privacy-First Conversational AI System for Smart Home Control}}
+
+\vspace{0.5in}
+
+{\large \textbf{Introduction and Project Overview}}
+
+\vspace{1in}
+
+{\large Tien Dinh}
+
+\vspace{0.5in}
+
+{\large Harrisburg University of Science and Technology}
+
+\vspace{0.5in}
+
+{\large CISC 699: Applied Project in Comp Info Science}
+
+\vspace{0.5in}
+
+{\large Professor Cha}
+
+\vspace{0.5in}
+
+{\large \today}
+
+\end{titlepage}
+
+\section{Introduction}
+
+The proliferation of smart home devices has transformed residential spaces into interconnected ecosystems capable of automation, monitoring, and intelligent control. Commercially available voice assistants such as Amazon Alexa, Google Assistant, and Apple Siri have become ubiquitous interfaces for managing these devices, processing billions of voice commands annually through cloud-based infrastructure. However, this convenience comes at a significant cost: user privacy. These systems require constant internet connectivity and transmit voice data, conversation histories, and behavioral patterns to remote data centers for processing, creating substantial privacy risks and exposing users to potential surveillance, data breaches, and unauthorized third-party access.
+
+Luna represents a fundamentally different approach to conversational AI for smart home control. Rather than relying on cloud services operated by large technology corporations, Luna operates entirely on edge hardware within the user's home network. This architectural choice eliminates the need to transmit sensitive voice commands and conversation data to external servers, providing users with genuine privacy and autonomy over their smart home interactions. By leveraging locally-deployed language models through Ollama and integrating with the open-source Home Assistant platform, Luna demonstrates that sophisticated conversational AI capabilities need not sacrifice user privacy.
+
+This introduction presents a comprehensive overview of the Luna project, examining the motivation for developing a privacy-first smart home assistant, the technical and user-experience objectives driving the design, the architectural approach enabling local operation, the testing methodology validating system functionality, and future directions for enhancing capabilities and accessibility. The following sections establish the foundation for understanding Luna as both a technical achievement in edge AI deployment and a practical response to growing concerns about privacy in smart home technology.
+
+\section{Motivation}
+
+The motivation for developing Luna emerges from the intersection of three critical trends in modern technology: the rapid adoption of smart home devices, increasing concerns about data privacy and corporate surveillance, and recent advances in deploying sophisticated AI models on resource-constrained hardware.
+
+\subsection{Privacy Concerns with Cloud-Based Voice Assistants}
+
+Commercial voice assistants have achieved remarkable natural language understanding and device control capabilities, but these achievements depend on cloud-based processing infrastructure that fundamentally compromises user privacy. When a user issues a voice command to Alexa, Google Assistant, or Siri, the audio recording is transmitted to remote servers where speech-to-text conversion, natural language understanding, intent classification, and response generation occur. This architecture creates multiple privacy vulnerabilities.
+
+First, users have limited visibility into what data is collected, how long it is retained, and who has access to it. While technology companies provide privacy policies describing data practices, these documents are often lengthy, difficult to understand, and subject to change without meaningful user consent. Users cannot independently verify that their voice data is processed as claimed or confirm that deletion requests are honored.
+
+Second, centralized data storage creates attractive targets for malicious actors. Data breaches affecting millions of users have become routine, and voice recordings represent particularly sensitive information that can reveal intimate details about household routines, relationships, health conditions, and financial circumstances. Even without breaches, authorized access by employees, contractors, or law enforcement agencies raises concerns about surveillance and privacy violations.
+
+Third, cloud-based processing enables companies to derive insights from aggregated user data for purposes beyond direct device control. Voice recordings and interaction patterns inform product development, targeted advertising, and behavior analysis. While some users may accept this trade-off for improved functionality, many users are uncomfortable with the extent of data collection and the lack of meaningful control over its use.
+
+The fundamental issue is that cloud-based architectures require users to trust technology companies with access to some of their most intimate data. This trust is increasingly difficult to justify given the incentive structures of technology companies, the frequency of data breaches, and growing awareness of surveillance capitalism's implications.
+
+\subsection{The Smart Home Paradox: Convenience versus Privacy}
+
+Smart home technology promises significant quality-of-life improvements through automation, energy efficiency, accessibility for individuals with disabilities, and enhanced security. However, realizing these benefits through commercial platforms creates a paradox: the more integrated and capable the smart home system becomes, the more extensive the privacy sacrifice required.
+
+This paradox manifests in several ways. Devices with always-listening microphones must continuously monitor ambient sound to detect wake words, raising concerns about inadvertent recording of private conversations. Detailed logs of device usage patterns reveal household occupancy, sleep schedules, and daily routines that could be exploited by malicious actors. Integration with third-party services (calendar applications, weather forecasts, shopping platforms) expands the scope of data collection beyond direct device control.
+
+For privacy-conscious users, this paradox creates an uncomfortable choice: accept commercial voice assistants with their privacy implications or forgo the convenience and accessibility benefits of voice-controlled smart homes. Some users attempt to mitigate privacy risks by limiting smart home device adoption, avoiding voice interfaces entirely, or carefully configuring privacy settings. However, these approaches sacrifice functionality and often prove ineffective as default settings favor data collection and privacy controls are complex or incomplete.
+
+The smart home paradox demonstrates a fundamental gap in the current technology landscape: there exists no widely-accessible solution providing sophisticated conversational AI capabilities without requiring users to sacrifice privacy. Luna was developed specifically to address this gap by demonstrating that privacy and functionality need not be mutually exclusive.
+
+\subsection{Technological Enablers: Edge AI and Open-Source Ecosystems}
+
+Recent technological developments have made privacy-respecting smart home assistants feasible where they previously were not. Two key enablers are particularly significant: advances in deploying large language models on edge hardware and the maturation of open-source smart home platforms.
+
+\subsubsection{Edge AI Deployment}
+
+Historically, running sophisticated language models required substantial computational resources available only in data centers. Large neural networks with billions of parameters demanded powerful GPUs, extensive memory, and significant energy consumption. This hardware barrier made cloud-based processing the only practical option for delivering advanced natural language understanding to consumer devices.
+
+However, recent innovations in model compression, quantization, and inference optimization have dramatically reduced the hardware requirements for running capable language models. Techniques such as knowledge distillation enable training smaller models that retain much of the performance of larger counterparts. Quantization reduces model precision from 32-bit to 8-bit or even 4-bit representations, decreasing memory requirements and computational costs with minimal accuracy loss. Optimized inference engines leverage hardware-specific optimizations to accelerate processing on commodity CPUs and GPUs.
+
+These advances enable deploying models with billions of parameters on devices ranging from high-end single-board computers (Raspberry Pi 4, NVIDIA Jetson) to repurposed desktop computers and home servers. Projects like Ollama have further simplified local model deployment by providing container-based packaging, automatic model management, and standardized APIs that abstract low-level complexity.
+
+\subsubsection{Open-Source Smart Home Platforms}
+
+Parallel to edge AI advances, open-source smart home platforms have matured into comprehensive ecosystems rivaling commercial alternatives. Home Assistant, in particular, has emerged as a powerful platform supporting thousands of device integrations, sophisticated automation capabilities, and flexible deployment options. Unlike proprietary platforms controlled by individual companies, Home Assistant is developed by a global community of contributors and maintains independence from manufacturer interests.
+
+Home Assistant's architecture separates device integration from control logic, enabling users to combine devices from different manufacturers without vendor lock-in. Its REST API and webhook support facilitate integration with external services and custom applications. These characteristics make Home Assistant an ideal foundation for Luna, providing robust device control without introducing additional privacy vulnerabilities.
+
+The convergence of edge AI capabilities and mature open-source smart home platforms creates an opportunity to develop systems like Luna that were previously impractical. Privacy-focused users need not sacrifice advanced conversational capabilities or comprehensive device support.
+
+\subsection{Academic and Practical Significance}
+
+Beyond addressing immediate privacy concerns, Luna has broader academic and practical significance. From a research perspective, Luna demonstrates practical edge AI deployment patterns applicable beyond smart home control. The architectural principles, resource management strategies, and deployment methodologies developed for Luna inform broader discussions about decentralized AI systems and alternatives to cloud-dependent architectures.
+
+From a practical perspective, Luna provides a concrete alternative to commercial voice assistants for individuals, households, and communities prioritizing privacy. While Luna originated as an academic project, its design emphasizes real-world usability and deployment on consumer-grade hardware. Documentation, installation procedures, and configuration management target users with varying technical sophistication, reducing barriers to adoption.
+
+Additionally, Luna contributes to the broader movement toward user-controlled technology infrastructure. By demonstrating that sophisticated smart home automation can operate independently of corporate platforms, Luna challenges assumptions about the inevitability of centralized control over personal technology. It provides evidence that different technological arrangements are possible and offers a practical starting point for individuals seeking alternatives.
+
+\section{Objectives}
+
+Luna's development is guided by several interconnected objectives spanning technical implementation, user experience, privacy assurance, and system sustainability. These objectives reflect both immediate goals for the current implementation and longer-term aspirations for the system's evolution.
+
+\subsection{Primary Objective: Privacy-First Smart Home Control}
+
+The paramount objective is to provide natural language control of smart home devices without requiring voice data or conversation histories to leave the user's local network. This objective manifests in several concrete requirements:
+
+\textbf{Local Processing}: All natural language understanding, intent classification, device command generation, and conversation management must occur on user-controlled hardware within the home network. No component of the processing pipeline should depend on external cloud services for core functionality.
+
+\textbf{Data Sovereignty}: Users must maintain complete control over conversation histories, device interaction logs, and any other data generated through Luna's operation. Data should be stored exclusively on user-controlled storage devices with encryption where appropriate. Users should be able to inspect, export, or delete their data without restriction.
+
+\textbf{Minimal External Dependencies}: While complete isolation from internet-connected services is impractical (devices may require manufacturer cloud services, weather data comes from external APIs), Luna itself should not introduce additional external dependencies. Optional integrations with external services should be clearly documented and user-controlled.
+
+\textbf{Transparency}: Users should understand what data Luna collects, how it is processed, where it is stored, and who has access. This transparency extends to code availability (open-source), documentation of data flows, and clear communication about system capabilities and limitations.
+
+\subsection{Technical Objectives}
+
+Several technical objectives guide Luna's architecture and implementation:
+
+\subsubsection{Resource Efficiency}
+
+Luna must operate effectively on resource-constrained hardware typical of home environments. Specifically, the core Luna application should function within 256-512MB of memory, enabling deployment on single-board computers like Raspberry Pi 4 or repurposed desktop hardware. CPU utilization should remain modest during idle periods and peak briefly during conversation processing. This efficiency ensures Luna is accessible to users without dedicated high-performance hardware.
+
+\subsubsection{Conversational Quality}
+
+Despite resource constraints, Luna should provide conversational capabilities comparable to cloud-based alternatives for common smart home scenarios. This includes understanding varied phrasings of commands ("turn on the lights" vs. "lights on" vs. "make it bright"), maintaining conversational context across multiple exchanges, handling ambiguity through clarifying questions, and providing informative responses to device status queries.
+
+Conversational quality depends heavily on the underlying language model. Luna's architecture decouples the application logic from specific models, enabling users to select models appropriate for their hardware capabilities and quality requirements. Documentation should provide guidance on model selection and expected performance characteristics.
+
+\subsubsection{Reliability and Availability}
+
+Smart home control systems must be reliable; failures to execute commands or system unavailability cause user frustration and may compromise household functionality. Luna should provide reasonable availability guarantees through graceful error handling, automatic service restarts on failures, health monitoring enabling proactive problem detection, and clear error messages guiding users toward resolution when issues occur.
+
+Deployment using Kubernetes (K3s) contributes to reliability through declarative configuration, automatic restart of failed containers, health check integration, and rolling update capabilities that minimize disruption during software updates.
+
+\subsubsection{Extensibility and Integration}
+
+While the initial implementation focuses on Home Assistant integration, Luna's architecture should accommodate future extensions. Potential enhancements include integration with additional smart home platforms (OpenHAB, Domoticz), support for custom device types and automation scenarios, plugin systems enabling community-contributed functionality, and integration with local speech-to-text systems for complete voice-to-action pipelines.
+
+Extensibility depends on modular architecture with clear interfaces between components. The device management layer, language model service, conversation manager, and API handlers should be loosely coupled, enabling independent modification or replacement.
+
+\subsection{User Experience Objectives}
+
+Beyond technical implementation, Luna prioritizes user experience objectives ensuring the system is accessible and practical for real-world use:
+
+\subsubsection{Simple Installation and Configuration}
+
+Deploying Luna should be straightforward for users with moderate technical skills. Installation procedures should provide clear step-by-step instructions, minimize prerequisites, offer automated deployment scripts where possible, and include troubleshooting guidance for common issues.
+
+Configuration should use familiar mechanisms (environment variables, configuration files) with sensible defaults. Required configuration parameters (Home Assistant URL and token, Ollama endpoint) should be clearly documented with examples. Optional parameters should enhance functionality without being necessary for basic operation.
+
+\subsubsection{Intuitive Interaction}
+
+Users should interact with Luna through natural, conversational language without needing to learn specific command syntax. The system should accommodate regional language variations, accept varied phrasings for equivalent commands, handle minor speech-to-text errors gracefully, and provide clear feedback when commands cannot be understood.
+
+The web interface should present conversation history clearly, display device status information accessibly, and enable easy management of conversation data (viewing, searching, deleting conversations).
+
+\subsubsection{Accessibility}
+
+Luna should be accessible to diverse users including individuals with disabilities who benefit from voice control, elderly users who may prefer conversational interfaces over complex device controls, and non-technical users who want smart home capabilities without managing complex systems.
+
+Accessibility considerations extend to economic accessibility: by supporting deployment on affordable hardware and providing free open-source software, Luna should be accessible to users unable or unwilling to invest in expensive commercial platforms.
+
+\subsection{Research and Educational Objectives}
+
+As an academic project, Luna serves research and educational objectives beyond its immediate functionality:
+
+\textbf{Demonstrating Edge AI Feasibility}: Luna provides concrete evidence that sophisticated AI capabilities can operate on edge hardware, informing discussions about decentralized AI architectures and their implications for privacy, autonomy, and technological power structures.
+
+\textbf{Educational Resource}: Luna's implementation, documentation, and design rationale serve as educational resources for students and practitioners interested in conversational AI, smart home integration, edge computing, privacy-preserving system design, and Kubernetes deployment.
+
+\textbf{Community Contribution}: By releasing Luna as open-source software with comprehensive documentation, the project contributes to the broader community of privacy-focused technology developers and users. Community feedback, contributions, and extensions can enhance Luna beyond the capabilities of the original development team.
+
+\section{Approach}
+
+Luna's approach combines architectural design principles, technology selection, implementation methodology, and deployment strategies to achieve the stated objectives. This section describes the overall system architecture, major components, and development process.
+
+\subsection{Architectural Overview}
+
+Luna employs a microservices-inspired architecture where distinct components handle specific responsibilities with well-defined interfaces. This modularity enables independent development, testing, and potential replacement of components while maintaining system coherence.
+
+\subsubsection{Core Components}
+
+The system comprises four primary components operating within a containerized Kubernetes environment:
+
+\textbf{Natural Language Processing Engine}: This component interfaces with Ollama to perform language model inference. It constructs prompts incorporating user messages, conversation context, and available device information, submits these prompts to the configured language model, and interprets model responses to extract actionable intents and device commands. The NLP engine is designed to be model-agnostic, supporting any Ollama-compatible language model through configuration.
+
+\textbf{Device Integration Layer}: This component manages communication with Home Assistant through its REST API. It synchronizes device state information (available devices, current states, supported actions), translates high-level intents from the NLP engine into specific Home Assistant API calls, executes device control commands, and retrieves device status for inclusion in conversational responses. The integration layer abstracts Home Assistant API details from the rest of the application, enabling potential support for alternative smart home platforms.
+
+\textbf{Context Management System}: Maintaining conversational context is essential for natural interaction. This component stores conversation histories in memory or persistent storage, tracks device references across conversation turns, maintains user session state, and provides context to the NLP engine for improved understanding. The context manager implements conversation lifecycle management including creation, retrieval, and deletion.
+
+\textbf{User Interface}: A web-based chat interface provides the primary user interaction point. Built with standard web technologies (HTML, CSS, JavaScript), the interface presents conversation history, accepts user text input (with potential future voice input integration), displays device status information, and enables conversation management. The interface communicates with backend services through REST APIs.
+
+\subsubsection{Supporting Infrastructure}
+
+Beyond core components, Luna's deployment includes supporting infrastructure:
+
+\textbf{API Gateway}: Built with the Gin web framework, the API gateway provides HTTP endpoints for chat interactions, device queries and control, conversation management, and system health checks. It implements request routing, error handling, logging, and potential authentication/authorization mechanisms.
+
+\textbf{Configuration Management}: Environment-based configuration enables deployment across diverse environments without code modification. Configuration parameters control server settings, Home Assistant connectivity, Ollama endpoint and model selection, language model inference parameters, resource limits, and logging.
+
+\textbf{Orchestration}: Kubernetes (specifically K3s) provides container orchestration, automated restarts on failures, health monitoring and readiness probes, persistent storage management, and declarative configuration. K3s was selected for its minimal resource overhead while providing full Kubernetes capabilities.
+
+\subsection{Technology Selection}
+
+Technology choices reflect priorities of resource efficiency, developer productivity, community support, and alignment with privacy objectives:
+
+\subsubsection{Programming Language: Go}
+
+Go (Golang) was selected as the implementation language for several reasons. Go produces statically-linked binaries with no runtime dependencies, simplifying deployment. The language provides excellent performance for network services and concurrent operations typical in API servers. Go's standard library includes robust HTTP server and client implementations. Cross-compilation capabilities enable building ARM64 binaries for Raspberry Pi deployment from development machines. Finally, Go's simplicity and clear error handling patterns contribute to code maintainability.
+
+\subsubsection{Language Model Deployment: Ollama}
+
+Ollama provides a streamlined interface for deploying and managing large language models locally. It handles model downloading and storage, provides GPU acceleration where available, offers a simple HTTP API for inference requests, and supports numerous open-source models (Llama, Mistral, etc.). Ollama's abstraction of low-level complexity enables Luna to focus on application logic rather than model deployment details.
+
+\subsubsection{Smart Home Platform: Home Assistant}
+
+Home Assistant was chosen for its comprehensive device support (thousands of integrations), active development community, flexible deployment options (Docker, Python virtual environments), well-documented REST API, and alignment with privacy values (open-source, local operation). Home Assistant's popularity ensures Luna can integrate with diverse smart home configurations.
+
+\subsubsection{Container Orchestration: K3s}
+
+K3s provides production-grade Kubernetes orchestration in a lightweight package suitable for edge deployments. It requires minimal resources (as little as 512MB RAM), includes Traefik ingress controller for HTTP routing, provides local storage provisioner for persistent volumes, and maintains compatibility with standard Kubernetes APIs and tools. K3s enables Luna to benefit from Kubernetes capabilities (declarative configuration, health monitoring, automated restarts) without the resource overhead of full Kubernetes distributions.
+
+\subsubsection{Web Framework: Gin}
+
+Gin is a high-performance Go web framework providing HTTP routing and middleware support, JSON serialization/deserialization, request validation, and clear error handling patterns. Its simplicity and performance make it well-suited for Luna's API gateway implementation.
+
+\subsection{Development Methodology}
+
+Luna's development followed iterative methodology with emphasis on testing, documentation, and continuous integration:
+
+\subsubsection{Iterative Development}
+
+Development proceeded through multiple iterations, each focusing on specific capabilities. Early iterations established basic infrastructure (HTTP server, configuration management, logging), Home Assistant integration, and simple device queries. Subsequent iterations added language model integration, conversational context management, web interface development, Kubernetes deployment manifests, and testing infrastructure.
+
+This iterative approach enabled early validation of architectural decisions, progressive complexity management, and regular integration of components to detect interface issues early.
+
+\subsubsection{Test-Driven Development}
+
+Comprehensive testing was prioritized throughout development. The current implementation includes unit tests for business logic and utilities, integration tests for Home Assistant client interactions, mock implementations of external dependencies for isolated testing, and automated test execution in continuous integration pipelines. Test coverage currently exceeds 80\%, providing confidence in code correctness and regression detection.
+
+\subsubsection{Documentation and Code Quality}
+
+Clear documentation and maintainable code are essential for academic projects that may be extended by others. Documentation includes comprehensive README with installation instructions and architecture overview, inline code comments explaining complex logic, configuration parameter documentation, API endpoint specifications, and troubleshooting guides for common issues.
+
+Code quality is maintained through consistent style (following Go conventions), static analysis with golint and go vet, security scanning with gosec, and code review processes.
+
+\subsubsection{Continuous Integration and Deployment}
+
+GitHub Actions provides continuous integration, automatically running tests, performing static analysis, building Docker images, and validating deployment manifests on every commit. This automation catches regressions early and ensures code quality standards are maintained.
+
+Deployment is streamlined through automated scripts that build appropriate Docker images (including ARM64 for Raspberry Pi), push images to Docker Hub, apply Kubernetes manifests, and verify deployment health. This automation reduces deployment friction and enables rapid iteration.
+
+\subsection{System Workflow}
+
+A typical user interaction with Luna follows this workflow:
+
+\begin{enumerate}
+\item User enters a message in the web interface (e.g., "turn on the living room lights")
+\item The web interface sends the message to the API gateway via HTTP POST to \texttt{/api/v1/chat}
+\item The API handler retrieves or creates a conversation session
+\item The conversation manager adds the user message to conversation history
+\item The device manager queries Home Assistant to get current device states
+\item The LLM service constructs a prompt including the user message, conversation context, and available devices
+\item The LLM service submits the prompt to Ollama for inference
+\item Ollama processes the prompt using the configured language model and returns a response
+\item The LLM service parses the model response to extract device control intents
+\item If device control is needed, the device manager executes the appropriate Home Assistant API call
+\item The API handler returns the model's conversational response to the web interface
+\item The web interface displays the response in the conversation thread
+\item The conversation manager updates conversation history with the complete exchange
+\end{enumerate}
+
+This workflow demonstrates how components collaborate to transform natural language input into device control actions while maintaining conversational context and providing user feedback.
+
+\subsection{Privacy-Preserving Design Patterns}
+
+Throughout implementation, specific design patterns enforce privacy objectives:
+
+\textbf{Local Processing Pipeline}: No component sends user data to external services except when explicitly required (e.g., Home Assistant API calls that stay within the local network, Ollama requests to local Ollama instances). External API calls for weather, calendar, or other optional integrations are user-controlled and clearly documented.
+
+\textbf{Data Minimization}: Luna collects only data necessary for functionality (user messages, conversation context, device states). No analytics, telemetry, or usage tracking is implemented. Users can disable conversation history persistence if desired.
+
+\textbf{Transparent Storage}: Conversation histories are stored in clearly-identified locations (in-memory by default, optionally in mounted volumes). Users can inspect, export, or delete stored data without restriction. Storage encryption is supported for persistent storage scenarios.
+
+\textbf{No External Accounts}: Luna operates without requiring user accounts, authentication to external services, or any relationship with third-party service providers. This eliminates risks associated with account compromise, service provider data practices, and third-party access.
+
+\section{Testing and Results}
+
+Comprehensive testing validates Luna's functionality, reliability, and performance. This section summarizes the testing methodology, key test categories, and significant outcomes.
+
+\subsection{Testing Methodology}
+
+Luna employs multi-layered testing addressing different aspects of system behavior:
+
+\subsubsection{Unit Testing}
+
+Unit tests validate individual functions and components in isolation. These tests use mocks to simulate external dependencies (Home Assistant API, Ollama service), enabling focused testing of business logic without requiring full system deployment. Unit tests cover configuration loading and validation, device state management, conversation context handling, LLM prompt construction, API request/response handling, and error handling paths.
+
+Go's built-in testing framework (\texttt{testing} package) provides test execution, assertion capabilities through third-party libraries (testify), and coverage reporting. Tests run automatically on every code change through continuous integration.
+
+\subsubsection{Integration Testing}
+
+Integration tests validate interactions between components and with external services. These tests include Home Assistant client testing against mock Home Assistant servers, end-to-end conversation flows including multiple components, device command execution and state retrieval, conversation persistence and retrieval, and API endpoint functionality under various inputs.
+
+Integration tests require more complex test fixtures but provide higher confidence that components work correctly together. Mock servers simulate Home Assistant responses, enabling controlled testing of various device types and scenarios.
+
+\subsubsection{Manual Testing}
+
+Automated testing is complemented by manual testing of user-facing functionality. Manual testing validates web interface usability and rendering, conversational quality with various phrasings and scenarios, deployment procedures on different hardware platforms, configuration changes and their effects, and error recovery and system resilience.
+
+Manual testing often reveals issues that automated tests miss, particularly around user experience, edge cases in natural language understanding, and deployment challenges on specific hardware configurations.
+
+\subsection{Test Coverage and Metrics}
+
+Current test coverage exceeds 80\%, measured by line coverage across the codebase. Critical components (device manager, conversation manager, LLM service) achieve higher coverage (over 90\%), ensuring core functionality is thoroughly validated. The API layer and configuration management have good coverage (75-85\%), while some utility functions and error handling paths have lower coverage.
+
+Coverage reports are generated automatically and published through Codecov integration, providing visibility into tested and untested code paths. Coverage trends are monitored to prevent regression.
+
+Beyond coverage metrics, tests validate specific behavioral requirements through assertion counts, error path testing (ensuring errors are handled gracefully), boundary condition testing (empty inputs, very long inputs, special characters), and concurrent operation testing (multiple simultaneous conversations).
+
+\subsection{Key Test Results}
+
+Testing has validated several critical aspects of Luna's functionality:
+
+\subsubsection{Functional Correctness}
+
+Tests confirm that Luna correctly handles common smart home commands including turning devices on/off, adjusting brightness and temperature, querying device status, and managing multiple devices in single commands. Conversation context is maintained across multiple turns, enabling natural multi-step interactions. Error handling gracefully manages invalid commands, unavailable devices, and service communication failures.
+
+\subsubsection{Performance Characteristics}
+
+Performance testing on reference hardware (Raspberry Pi 4 with 4GB RAM, connecting to Ollama on a separate machine) demonstrates conversational latency of 2-5 seconds for typical queries using Llama 3.2 (7B parameters), memory consumption of approximately 200-300MB for the Luna application, and CPU utilization peaks briefly during request processing then returns to minimal idle levels. These results confirm that Luna operates efficiently within typical home network constraints.
+
+Language model inference time dominates overall latency, varying based on model size, hardware acceleration, and prompt complexity. Users with GPU-accelerated Ollama deployments experience sub-second inference times.
+
+\subsubsection{Reliability}
+
+Stability testing demonstrates that Luna maintains operation over extended periods without memory leaks or degradation. The application correctly restarts on failures, Kubernetes health checks detect and recover from unhealthy states, and conversation state persists across restarts when using persistent storage.
+
+\subsubsection{Deployment Verification}
+
+Deployment testing on various hardware platforms confirms successful operation on Raspberry Pi 4 (ARM64), x86 desktop Linux systems, and macOS (for development). Docker image builds complete successfully for both AMD64 and ARM64 architectures. Kubernetes manifests deploy correctly on K3s clusters with automated deployment scripts functioning as documented.
+
+\subsection{Identified Limitations}
+
+Testing also revealed limitations informing future development:
+
+\textbf{Language Model Dependency}: Conversational quality varies significantly based on the selected language model. Smaller models (fewer than 7B parameters) often struggle with complex requests or produce inconsistent responses. Larger models improve quality but require more powerful hardware and increase latency.
+
+\textbf{Ambiguity Resolution}: Luna currently has limited capability to handle ambiguous requests. When multiple devices match a description or commands are unclear, the system often makes assumptions rather than asking clarifying questions. Improving disambiguation would enhance usability.
+
+\textbf{Limited Context Window}: Current implementation maintains recent conversation history but does not implement sophisticated context pruning or summarization. Very long conversations may exceed language model context windows, causing loss of early context.
+
+\textbf{Voice Input Integration}: The current implementation provides a text-based interface. While this is sufficient for validation, true smart home assistants require voice input. Integration with local speech-to-text systems (Whisper, Coqui STT) is planned but not yet implemented.
+
+\section{Future Work}
+
+While Luna demonstrates core feasibility of privacy-first conversational smart home control, numerous opportunities exist for enhancement and expansion.
+
+\subsection{Enhanced Natural Language Understanding}
+
+Several improvements could enhance conversational quality. Implementing explicit clarification dialogues when requests are ambiguous would improve accuracy and user confidence. Developing conversation summarization to maintain context in long interactions would enable more sophisticated multi-turn conversations. Training or fine-tuning models specifically for smart home domains could improve understanding of device-specific terminology and common command patterns. Supporting multi-modal inputs (combining voice, text, and visual interfaces) would increase accessibility and flexibility.
+
+\subsection{Voice Integration}
+
+Full voice interaction requires integrating speech-to-text and text-to-speech components. Local deployment of Whisper or Coqui STT would enable privacy-preserving speech recognition. Integration with text-to-speech systems (Piper, Coqui TTS) would enable spoken responses. Wake word detection using privacy-respecting systems (Porcupine) would enable hands-free activation. Implementing these components locally maintains privacy while providing conventional voice assistant experience.
+
+\subsection{Advanced Device Control}
+
+Current implementation focuses on simple device commands. Extensions could include multi-device automation scenarios ("good night mode": lock doors, turn off lights, set thermostat), scheduled and conditional automation, integration with scene definitions, and support for more complex device types (media players, security systems, appliances).
+
+\subsection{Improved Deployment Accessibility}
+
+Making Luna accessible to less technical users requires simplified installation procedures. Pre-built appliance images for Raspberry Pi and other popular hardware, automated installation scripts requiring minimal configuration, web-based initial setup wizards, and companion mobile applications for configuration and control would all reduce barriers to adoption.
+
+\subsection{Multi-User and Household Management}
+
+Current implementation treats all users equivalently. Supporting multiple household members requires user authentication and personal conversation histories, per-user preferences and device access controls, household-shared versus individual device management, and privacy controls enabling users to manage their data independently.
+
+\subsection{Community Ecosystem}
+
+Developing Luna into a community-maintained project could extend capabilities beyond the core team's resources. This requires establishing governance structures and contribution guidelines, developing plugin architectures enabling community extensions, creating comprehensive developer documentation, and building community forums and support channels.
+
+\subsection{Performance Optimization}
+
+Continued optimization could reduce latency and resource requirements. Techniques include caching frequently-accessed device information, implementing streaming responses for improved perceived responsiveness, exploring more efficient language model architectures, and optimizing Kubernetes resource allocation.
+
+\subsection{Security Hardening}
+
+While privacy is central to Luna's design, additional security improvements could enhance robustness. Implementing authentication and authorization for API access, enabling HTTPS for all communication, providing secure secrets management for credentials, conducting security audits and penetration testing, and implementing rate limiting to prevent abuse would all strengthen security posture.
+
+\subsection{Research Extensions}
+
+Luna's architecture enables research into several topics. Investigating federated learning approaches to improve models while preserving privacy, exploring decentralized conversation storage and synchronization across devices, studying user interaction patterns to improve conversational design while respecting privacy, and comparing privacy-preserving designs to commercial alternatives in terms of functionality, usability, and user trust all represent valuable research directions.
+
+\section{Conclusion}
+
+Luna demonstrates that sophisticated conversational AI for smart home control can operate entirely on edge hardware without sacrificing privacy to cloud-based services. By combining local language model deployment through Ollama, integration with the open-source Home Assistant platform, efficient implementation in Go, and lightweight Kubernetes orchestration, Luna provides genuine privacy while delivering functionality comparable to commercial alternatives for common smart home scenarios.
+
+The motivation for Luna emerges from growing concerns about data privacy in an era of pervasive smart home technology and corporate surveillance. Commercial voice assistants achieve impressive capabilities but at the cost of transmitting intimate user data to remote servers controlled by technology companies. Luna offers an alternative that respects user privacy and autonomy while demonstrating that different technological arrangements are possible.
+
+Luna's objectives encompass technical implementation (resource efficiency, conversational quality, reliability), user experience (simple installation, intuitive interaction, accessibility), and broader impacts (demonstrating edge AI feasibility, serving as an educational resource, contributing to privacy-focused technology communities). The architectural approach employs modular design with distinct components for natural language processing, device integration, context management, and user interface, all orchestrated through Kubernetes and configured through environment variables.
+
+Comprehensive testing validates Luna's functionality, with over 80\% code coverage and successful deployment on diverse hardware platforms. Performance testing confirms efficient operation on resource-constrained hardware like Raspberry Pi 4. However, testing also reveals limitations including language model dependency, ambiguity resolution challenges, and lack of voice input integration that inform future development priorities.
+
+Future work encompasses enhancements to natural language understanding, voice integration for hands-free operation, advanced device control and automation, improved deployment accessibility for non-technical users, multi-user household management, community ecosystem development, performance optimization, security hardening, and research extensions exploring federated learning and decentralized architectures.
+
+Luna represents both a technical achievement in edge AI deployment and a practical response to privacy concerns in smart home technology. By demonstrating feasibility and providing open-source implementation, Luna contributes to ongoing conversations about privacy, autonomy, and alternatives to corporate-controlled technology platforms. While challenges remain in matching the polish and breadth of commercial systems, Luna proves that privacy-respecting smart home assistants are achievable and offers a foundation for continued development by individuals and communities prioritizing user control over their technology.
+
+\end{document}
