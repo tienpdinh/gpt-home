@@ -16,8 +16,8 @@ spec:
     spec:
       containers:
       - name: gpt-home
-        image: tiendinhphuc/gpt-home:arm64
-        imagePullPolicy: Always
+        image: tiendinhphuc/gpt-home:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
         env:
@@ -63,6 +63,13 @@ spec:
         volumeMounts:
         - name: data-storage
           mountPath: /data
+        startupProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          failureThreshold: 30
         livenessProbe:
           httpGet:
             path: /api/v1/health

@@ -4,7 +4,7 @@ metadata:
   name: gpt-home-config
 data:
   ha-url: "http://10.97.2.114:8123"
-  ollama-url: "http://10.97.1.165:11434"
+  ollama-url: "http://ollama-service.gpt-home.svc.cluster.local:11434"
   ollama-model: "llama3.2"
   llm-max-tokens: "512"
   llm-temperature: "0.7"
