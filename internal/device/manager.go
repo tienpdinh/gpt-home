@@ -17,12 +17,14 @@ type Manager struct {
 	devices      map[string]models.Device
 	devicesMutex sync.RWMutex
 	lastUpdate   time.Time
+	validator    *Validator
 }
 
 func NewManager(haClient homeassistant.ClientInterface) *Manager {
 	return &Manager{
-		haClient: haClient,
-		devices:  make(map[string]models.Device),
+		haClient:  haClient,
+		devices:   make(map[string]models.Device),
+		validator: NewValidator(),
 	}
 }
 
@@ -111,10 +113,23 @@ func (m *Manager) ExecuteActionOnDevice(deviceID string, action models.DeviceAct
 		return fmt.Errorf("device not found: %s", deviceID)
 	}
 
+	// Validate action before execution
+	validationResult := m.validator.ValidateAction(&action)
+	if !validationResult.Valid {
+		return fmt.Errorf("action validation failed: %s", validationResult.Error)
+	}
+
+	if validationResult.Warning != "" {
+		logrus.Warnf("Action warning for device %s: %s", deviceID, validationResult.Warning)
+	}
+
+	// Use the safe action from validation
+	safeAction := validationResult.SafeAction
+
 	// Map action to HomeAssistant service call
-	domain, service, serviceData := m.mapActionToService(device, action)
+	domain, service, serviceData := m.mapActionToService(device, *safeAction)
 	if domain == "" || service == "" {
-		return fmt.Errorf("unsupported action %s for device type %s", action.Action, device.Type)
+		return fmt.Errorf("unsupported action %s for device type %s", safeAction.Action, device.Type)
 	}
 
 	// Execute the service call
@@ -122,7 +137,7 @@ func (m *Manager) ExecuteActionOnDevice(deviceID string, action models.DeviceAct
 		return fmt.Errorf("failed to execute action: %w", err)
 	}
 
-	logrus.Infof("Executed action %s on device %s", action.Action, deviceID)
+	logrus.Infof("Executed action %s on device %s", safeAction.Action, deviceID)
 	return nil
 }
 

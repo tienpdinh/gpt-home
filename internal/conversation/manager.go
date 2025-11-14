@@ -6,19 +6,62 @@ import (
 	"time"
 
 	"github.com/tienpdinh/gpt-home/pkg/models"
+	"github.com/tienpdinh/gpt-home/internal/database"
 
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 )
 
 type Manager struct {
 	conversations map[uuid.UUID]*models.Conversation
 	mutex         sync.RWMutex
+	db            *database.DB // Optional SQLite persistence
 }
 
 func NewManager() *Manager {
 	return &Manager{
 		conversations: make(map[uuid.UUID]*models.Conversation),
+		db:            nil,
 	}
+}
+
+// NewManagerWithDB creates a manager with SQLite persistence
+func NewManagerWithDB(dbPath string) (*Manager, error) {
+	db, err := database.New(dbPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize database: %w", err)
+	}
+
+	m := &Manager{
+		conversations: make(map[uuid.UUID]*models.Conversation),
+		db:            db,
+	}
+
+	// Load existing conversations from database
+	if err := m.loadConversationsFromDB(); err != nil {
+		logrus.Warnf("Failed to load conversations from database: %v", err)
+	}
+
+	return m, nil
+}
+
+// loadConversationsFromDB loads all conversations from the database into memory
+func (m *Manager) loadConversationsFromDB() error {
+	if m.db == nil {
+		return nil
+	}
+
+	convs, err := m.db.GetAllConversations()
+	if err != nil {
+		return err
+	}
+
+	for _, conv := range convs {
+		m.conversations[conv.ID] = conv
+	}
+
+	logrus.Infof("Loaded %d conversations from database", len(convs))
+	return nil
 }
 
 func (m *Manager) CreateConversation() *models.Conversation {
@@ -63,6 +106,15 @@ func (m *Manager) UpdateConversation(conv *models.Conversation) error {
 
 	conv.UpdatedAt = time.Now()
 	m.conversations[conv.ID] = conv
+
+	// Persist to database if available
+	if m.db != nil {
+		if err := m.db.SaveConversation(conv); err != nil {
+			logrus.Warnf("Failed to persist conversation to database: %v", err)
+			// Don't fail - keep working in-memory
+		}
+	}
+
 	return nil
 }
 
@@ -165,4 +217,12 @@ func (m *Manager) GetConversationStats() map[string]interface{} {
 		"total_conversations": len(m.conversations),
 		"total_messages":      totalMessages,
 	}
+}
+
+// Close closes the database connection if it exists
+func (m *Manager) Close() error {
+	if m.db != nil {
+		return m.db.Close()
+	}
+	return nil
 }

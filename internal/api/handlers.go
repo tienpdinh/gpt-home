@@ -65,8 +65,8 @@ func (h *Handler) HandleChat(c *gin.Context) {
 	}
 	conv.Messages = append(conv.Messages, userMessage)
 
-	// Process message with LLM
-	response, actions, err := h.llmService.ProcessMessage(req.Message, conv.Context)
+	// Process message with LLM, including conversation history
+	response, actions, err := h.llmService.ProcessMessageWithHistory(req.Message, conv.Context, conv.Messages)
 	if err != nil {
 		logrus.WithError(err).Error("Failed to process message")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process message"})

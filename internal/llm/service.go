@@ -27,6 +27,14 @@ type Service struct {
 	config      OllamaConfig
 }
 
+// LLMResponse represents the structured response from the LLM
+type LLMResponse struct {
+	Understanding string               `json:"understanding"`
+	Response      string               `json:"response"`
+	Actions       []models.DeviceAction `json:"actions,omitempty"`
+	Confidence    float32              `json:"confidence"`
+}
+
 type OllamaConfig struct {
 	URL         string
 	Model       string
@@ -196,6 +204,11 @@ func (s *Service) GetModelInfo() ModelInfo {
 }
 
 func (s *Service) ProcessMessage(message string, context models.Context) (string, []models.DeviceAction, error) {
+	return s.ProcessMessageWithHistory(message, context, []models.Message{})
+}
+
+// ProcessMessageWithHistory processes a message with full conversation history
+func (s *Service) ProcessMessageWithHistory(message string, context models.Context, history []models.Message) (string, []models.DeviceAction, error) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
@@ -203,11 +216,11 @@ func (s *Service) ProcessMessage(message string, context models.Context) (string
 		return "", nil, fmt.Errorf("not connected to Ollama")
 	}
 
-	// Create a smart home assistant prompt
-	prompt := s.createSmartHomePrompt(message, context)
+	// Create a smart home assistant prompt that includes conversation history
+	prompt := s.createSmartHomePromptWithHistory(message, context, history)
 
 	// Generate response using Ollama
-	llmResponse, err := s.generateResponse(prompt)
+	llmResponseText, err := s.generateResponse(prompt)
 	if err != nil {
 		logrus.Errorf("Failed to generate response: %v", err)
 		// Fallback to rule-based parsing
@@ -215,11 +228,17 @@ func (s *Service) ProcessMessage(message string, context models.Context) (string
 		return fallbackResponse, actions, nil
 	}
 
-	// Parse actions from the LLM response
-	actions := s.extractActionsFromResponse(llmResponse)
+	// Parse structured JSON response
+	structuredResponse := s.parseStructuredResponse(llmResponseText)
+	if structuredResponse == nil {
+		// If JSON parsing fails, fall back to text extraction
+		logrus.Warnf("Failed to parse structured JSON, using fallback extraction")
+		actions := s.extractActionsFromResponse(llmResponseText)
+		return llmResponseText, actions, nil
+	}
 
-	logrus.Debugf("Processed message: %s -> %s", message, llmResponse)
-	return llmResponse, actions, nil
+	logrus.Debugf("Processed message: %s -> %+v", message, structuredResponse)
+	return structuredResponse.Response, structuredResponse.Actions, nil
 }
 
 func (s *Service) parseCommand(message string, context models.Context) (string, []models.DeviceAction) {
@@ -352,7 +371,99 @@ Available actions:
 Respond naturally and briefly as Luna. If you perform an action, mention it. Always introduce yourself as Luna when asked about your name.%s
 
 Human: %s
-Assistant:`, deviceContext, message)
+Assistant:
+You must respond with valid JSON only (no additional text) in this exact format:
+{
+  "understanding": "brief description of what the user asked",
+  "response": "natural conversational response to the user",
+  "actions": [{"action": "action_name", "parameters": {"key": "value"}}],
+  "confidence": 0.95
+}
+
+Available actions: turn_on, turn_off, set_brightness (0-255), set_temperature (18-28), set_color_temp (2700-6500)
+`, deviceContext, message)
+}
+
+// createSmartHomePromptWithHistory creates a prompt that includes conversation history
+func (s *Service) createSmartHomePromptWithHistory(message string, context models.Context, history []models.Message) string {
+	deviceContext := ""
+	if len(context.ReferencedDevices) > 0 {
+		deviceContext = fmt.Sprintf("\nPreviously referenced devices: %s", strings.Join(context.ReferencedDevices, ", "))
+	}
+
+	// Build conversation history context
+	historyContext := ""
+	if len(history) > 0 {
+		// Include recent messages (limit to last 10 for token efficiency)
+		startIdx := 0
+		if len(history) > 10 {
+			startIdx = len(history) - 10
+		}
+
+		historyContext = "\nRecent conversation history:\n"
+		for _, msg := range history[startIdx:] {
+			role := "User"
+			if msg.Role == models.MessageRoleAssistant {
+				role = "Luna"
+			}
+			historyContext += fmt.Sprintf("%s: %s\n", role, msg.Content)
+		}
+	}
+
+	return fmt.Sprintf(`You are Luna, a helpful smart home assistant. You can control lights, switches, climate, and other devices.
+
+Available actions:
+- turn_on/turn_off: For lights and switches
+- set_brightness: For lights (0-255)
+- set_temperature: For climate (degrees)
+- set_color_temp: For lights (kelvin 2700-6500)
+
+Respond naturally and briefly as Luna. If you perform an action, mention it. Always introduce yourself as Luna when asked about your name.%s%s
+
+%sHuman: %s
+Assistant:
+You must respond with valid JSON only (no additional text) in this exact format:
+{
+  "understanding": "brief description of what the user asked",
+  "response": "natural conversational response to the user",
+  "actions": [{"action": "action_name", "parameters": {"key": "value"}}],
+  "confidence": 0.95
+}
+
+Available actions: turn_on, turn_off, set_brightness (0-255), set_temperature (18-28), set_color_temp (2700-6500)
+`, deviceContext, historyContext, historyContext, message)
+}
+
+func (s *Service) parseStructuredResponse(responseText string) *LLMResponse {
+	// Try to extract JSON from the response
+	// Some models may wrap JSON in markdown code blocks
+	jsonStr := responseText
+
+	// Remove markdown code blocks if present
+	if strings.Contains(jsonStr, "```json") {
+		parts := strings.Split(jsonStr, "```json")
+		if len(parts) > 1 {
+			jsonStr = parts[1]
+			if idx := strings.Index(jsonStr, "```"); idx != -1 {
+				jsonStr = jsonStr[:idx]
+			}
+		}
+	} else if strings.Contains(jsonStr, "```") {
+		parts := strings.Split(jsonStr, "```")
+		if len(parts) > 1 {
+			jsonStr = parts[1]
+		}
+	}
+
+	jsonStr = strings.TrimSpace(jsonStr)
+
+	var response LLMResponse
+	if err := json.Unmarshal([]byte(jsonStr), &response); err != nil {
+		logrus.Debugf("Failed to parse JSON response: %v, raw response: %s", err, responseText)
+		return nil
+	}
+
+	return &response
 }
 
 func (s *Service) extractActionsFromResponse(response string) []models.DeviceAction {
